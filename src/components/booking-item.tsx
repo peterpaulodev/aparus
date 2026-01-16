@@ -188,7 +188,7 @@ export function BookingItem({
               onSelect={setSelectedDate}
               locale={ptBR}
               disabled={(date) => date < new Date()}
-              className="w-full h-auto"
+              className="rounded-md border w-full"
             />
           </div>
 
