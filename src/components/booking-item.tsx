@@ -177,7 +177,7 @@ export function BookingItem({
 
         <div className="space-y-6 px-4 mb-12">
           {/* Seção: Calendário */}
-          <div>
+          <div className='h-96'>
             <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
               Selecione a data
@@ -188,7 +188,7 @@ export function BookingItem({
               onSelect={setSelectedDate}
               locale={ptBR}
               disabled={(date) => date < new Date()}
-              className="rounded-md border w-full h-full"
+              className="rounded-md border w-full h-auto"
             />
           </div>
 
