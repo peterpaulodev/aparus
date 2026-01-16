@@ -1,0 +1,90 @@
+// Configurações iniciais do Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. A Barbearia (O teu cliente pagante)
+model Barbershop {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique // O "Link da Bio": meusistema.com/barbearia-do-ze
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  barbers   Barber[]
+  services  Service[]
+  bookings  Booking[]
+  customers Customer[] // CRM da barbearia
+}
+
+// 2. O Profissional (Pode ser o dono ou funcionário)
+model Barber {
+  id        String  @id @default(uuid())
+  name      String
+  email     String? // Opcional no início
+  avatarUrl String?
+
+  // Disponibilidade simples (ex: JSON com dias e horas de trabalho)
+  availability Json?
+
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  bookings Booking[]
+}
+
+// 3. Os Serviços (O produto)
+model Service {
+  id          String  @id @default(uuid())
+  name        String // Ex: "Corte Degradê"
+  price       Decimal @db.Decimal(10, 2) // Sempre usa Decimal para dinheiro!
+  duration    Int // Em minutos (ex: 30, 45, 60)
+  description String?
+
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  bookings Booking[]
+}
+
+// 4. O Cliente Final (Quem corta o cabelo)
+model Customer {
+  id    String  @id @default(uuid())
+  name  String
+  phone String // CRUCIAL para o WhatsApp e Login sem senha
+  email String?
+
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  bookings Booking[]
+}
+
+// 5. O Agendamento (A transação)
+model Booking {
+  id     String   @id @default(uuid())
+  date   DateTime // Data e Hora do agendamento
+  status String   @default("CONFIRMED") // PENDING, CONFIRMED, CANCELED, COMPLETED
+
+  // Relações
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  barberId String
+  barber   Barber @relation(fields: [barberId], references: [id])
+
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  createdAt DateTime @default(now())
+}
