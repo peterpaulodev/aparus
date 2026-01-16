@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { User } from 'lucide-react';
 import { Metadata } from 'next';
+import type { Service } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 import { BookingItem } from '@/components/booking-item';
@@ -108,7 +109,7 @@ export default async function BarbershopPage({ params }: Props) {
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {barbershop.services.map((service) => (
+              {barbershop.services.map((service: Service) => (
                 <BookingItem
                   key={service.id}
                   service={service}
