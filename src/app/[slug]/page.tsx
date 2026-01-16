@@ -114,6 +114,7 @@ export default async function BarbershopPage({ params }: Props) {
                   service={service}
                   barbers={barbershop.barbers}
                   barbershopSlug={slug}
+                  barbershopId={barbershop.id}
                 />
               ))}
             </div>
