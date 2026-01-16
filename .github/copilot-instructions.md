@@ -19,7 +19,7 @@ O objetivo é fornecer uma experiência minimalista e "Mobile-First" para que os
 
 ## 2. Stack Tecnológica & Diretrizes
 
-- **Framework:** Next.js 14+ (App Router). NÃO usar o Pages router.
+- **Framework:** Next.js 16+ (App Router). NÃO usar o Pages router.
 - **Linguagem:** TypeScript (Modo Strict).
 - **Base de Dados:** PostgreSQL.
 - **ORM:** Prisma.

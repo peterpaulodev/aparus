@@ -1,18 +1,11 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { Clock, DollarSign, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Metadata } from 'next';
 
 import { prisma } from '@/lib/prisma';
-import { formatPrice, formatDuration } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { BookingItem } from '@/components/booking-item';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   Avatar,
   AvatarFallback,
@@ -20,13 +13,15 @@ import {
 } from '@/components/ui/avatar';
 
 type Props = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 // Gera metadata dinâmica para SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+
   const barbershop = await prisma.barbershop.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { name: true },
   });
 
@@ -43,9 +38,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function BarbershopPage({ params }: Props) {
+  const { slug } = await params;
+
   // Busca a barbearia com serviços e barbeiros
   const barbershop = await prisma.barbershop.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       services: {
         orderBy: { name: 'asc' },
@@ -112,46 +109,12 @@ export default async function BarbershopPage({ params }: Props) {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {barbershop.services.map((service) => (
-                <Card key={service.id} className="flex flex-col">
-                  <CardHeader>
-                    <CardTitle className="text-lg">{service.name}</CardTitle>
-                    {service.description && (
-                      <CardDescription className="line-clamp-2">
-                        {service.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="flex-1">
-                    <div className="space-y-3">
-                      {/* Preço */}
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-semibold text-foreground">
-                          {formatPrice(service.price.toString())}
-                        </span>
-                      </div>
-
-                      {/* Duração */}
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">
-                          {formatDuration(service.duration)}
-                        </span>
-                      </div>
-
-                      {/* Botão de Reserva */}
-                      <Button
-                        className="w-full mt-4"
-                        size="lg"
-                        asChild
-                      >
-                        <a href={`/${params.slug}/booking/${service.id}`}>
-                          Reservar
-                        </a>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <BookingItem
+                  key={service.id}
+                  service={service}
+                  barbers={barbershop.barbers}
+                  barbershopSlug={slug}
+                />
               ))}
             </div>
           )}
