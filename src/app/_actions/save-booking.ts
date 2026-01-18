@@ -1,7 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { format } from 'date-fns';
 import { prisma } from '@/lib/prisma';
+import { getAvailableTimes } from './get-available-times';
 
 type SaveBookingParams = {
   barbershopId: string;
@@ -61,6 +63,41 @@ export async function saveBooking(
 
     // Normaliza o telefone (remove espaços e caracteres especiais)
     const normalizedPhone = customerPhone.replace(/\D/g, '');
+
+    // Busca o serviço para obter a duração
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { duration: true },
+    });
+
+    if (!service) {
+      return {
+        success: false,
+        error: 'Serviço não encontrado',
+      };
+    }
+
+    // Valida se o horário está disponível
+    const availabilityCheck = await getAvailableTimes({
+      barberId,
+      date,
+      serviceDuration: service.duration,
+    });
+
+    if (!availabilityCheck.success || !availabilityCheck.times) {
+      return {
+        success: false,
+        error: availabilityCheck.error || 'Erro ao verificar disponibilidade',
+      };
+    }
+
+    const requestedTime = format(date, 'HH:mm');
+    if (!availabilityCheck.times.includes(requestedTime)) {
+      return {
+        success: false,
+        error: 'Este horário não está mais disponível. Por favor, escolha outro horário.',
+      };
+    }
 
     // Verifica se já existe um Customer com esse telefone na barbearia
     let customer = await prisma.customer.findFirst({

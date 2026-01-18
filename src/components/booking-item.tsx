@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Calendar as CalendarIcon, Clock, DollarSign, User, Phone } from 'lucide-react';
+import { useState, useTransition, useEffect } from 'react';
+import { Calendar as CalendarIcon, Clock, DollarSign, User, Loader2 } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
 import type { Service, Barber } from '@prisma/client';
-import { toast } from "sonner"
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { saveBooking } from '@/app/_actions/save-booking';
+import { getAvailableTimes } from '@/app/_actions/get-available-times';
 import {
   Card,
   CardContent,
@@ -35,52 +37,99 @@ type BookingItemProps = {
   barbershopId: string;
 };
 
-// Horários disponíveis (estáticos por enquanto)
-const AVAILABLE_TIMES = [
-  '09:00',
-  '09:30',
-  '10:00',
-  '10:30',
-  '11:00',
-  '11:30',
-  '12:00',
-  '13:00',
-  '13:30',
-  '14:00',
-  '14:30',
-  '15:00',
-  '15:30',
-  '16:00',
-  '16:30',
-  '17:00',
-  '17:30',
-  '18:00',
-];
-
 export function BookingItem({
   service,
   barbers,
-  barbershopSlug,
   barbershopId,
 }: BookingItemProps) {
+  // Estados
+  const [selectedBarber, setSelectedBarber] = useState<string | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
-  const [selectedBarber, setSelectedBarber] = useState<string | undefined>(undefined);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const handleConfirmBooking = () => {
-    // Validações
-    if (!selectedDate || !selectedTime) {
-      setErrorMessage('Por favor, selecione uma data e horário');
+  // Buscar horários disponíveis quando barbeiro e data mudarem
+  useEffect(() => {
+    if (!selectedBarber || !selectedDate) {
       return;
     }
 
+    let cancelled = false;
+
+    const fetchTimes = async () => {
+      setIsLoadingTimes(true);
+      setSelectedTime(undefined);
+      setAvailableTimes([]);
+      setErrorMessage(null);
+
+      try {
+        const result = await getAvailableTimes({
+          barberId: selectedBarber,
+          date: selectedDate,
+          serviceDuration: service.duration,
+        });
+        console.log('🚀 ~ fetchTimes ~ result:', result);
+
+        if (cancelled) return;
+
+        if (result.success && result.times) {
+          setAvailableTimes(result.times);
+          if (result.times.length === 0) {
+            setErrorMessage('Não há horários disponíveis para esta data');
+          }
+        } else {
+          setErrorMessage(result.error || 'Erro ao buscar horários');
+          setAvailableTimes([]);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Erro ao buscar horários:', error);
+        setErrorMessage('Erro ao buscar horários disponíveis');
+        setAvailableTimes([]);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTimes(false);
+        }
+      }
+    };
+
+    fetchTimes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBarber, selectedDate, service.duration]);
+
+  // Resetar data e horário quando trocar de barbeiro
+  const handleBarberChange = (barberId: string) => {
+    setSelectedBarber(barberId);
+    setSelectedDate(undefined);
+    setSelectedTime(undefined);
+    setAvailableTimes([]);
+    setErrorMessage(null);
+  };
+
+  // Resetar horário quando trocar de data
+  const handleDateChange = (date: Date | undefined) => {
+    setSelectedDate(date);
+    setSelectedTime(undefined);
+  };
+
+  const handleConfirmBooking = () => {
+    // Validações
     if (!selectedBarber) {
       setErrorMessage('Por favor, selecione um profissional');
+      return;
+    }
+
+    if (!selectedDate || !selectedTime) {
+      setErrorMessage('Por favor, selecione uma data e horário');
       return;
     }
 
@@ -113,9 +162,10 @@ export function BookingItem({
         );
 
         // Resetar estado e fechar
+        setSelectedBarber(undefined);
         setSelectedDate(undefined);
         setSelectedTime(undefined);
-        setSelectedBarber(undefined);
+        setAvailableTimes([]);
         setCustomerName('');
         setCustomerPhone('');
         setErrorMessage(null);
@@ -125,6 +175,9 @@ export function BookingItem({
       }
     });
   };
+
+  // Encontrar dados do barbeiro selecionado
+  const selectedBarberData = barbers.find((b) => b.id === selectedBarber);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -169,81 +222,129 @@ export function BookingItem({
         <SheetHeader>
           <SheetTitle>Agendar {service.name}</SheetTitle>
           <SheetDescription>
-            Escolha a data e horário para seu agendamento
+            Siga os passos para fazer seu agendamento
           </SheetDescription>
         </SheetHeader>
 
-        <Separator />
+        <Separator className="my-4" />
 
-        <div className="space-y-6 px-4 mb-12">
-          {/* Seção: Calendário */}
-          <div className='h-96'>
+        <div className="space-y-6 px-4 pb-12">
+          {/* PASSO 1: Selecionar Profissional */}
+          <div>
             <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Selecione a data
+              <User className="h-4 w-4" />
+              1. Escolha o profissional
             </h3>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              locale={ptBR}
-              disabled={(date) => date < new Date()}
-              className="rounded-md border w-full"
-            />
+            <div className="grid grid-cols-1 gap-3">
+              {barbers.map((barber) => (
+                <button
+                  key={barber.id}
+                  onClick={() => handleBarberChange(barber.id)}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50 ${selectedBarber === barber.id
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border'
+                    }`}
+                >
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={barber.avatarUrl || undefined} alt={barber.name} />
+                    <AvatarFallback>
+                      {barber.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold">{barber.name}</p>
+                    {barber.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {barber.description}
+                      </p>
+                    )}
+                  </div>
+                  {selectedBarber === barber.id && (
+                    <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                      <div className="h-2 w-2 rounded-full bg-white" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Seção: Horários disponíveis */}
-          {selectedDate && (
+          {/* PASSO 2: Selecionar Data */}
+          {selectedBarber && (
+            <div>
+              <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                2. Selecione a data
+              </h3>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateChange}
+                locale={ptBR}
+                disabled={(date) => date < new Date()}
+                className="rounded-md border w-full"
+              />
+            </div>
+          )}
+
+          {!selectedBarber && (
+            <div className="rounded-lg border border-dashed border-muted-foreground/30 p-6 text-center">
+              <User className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                Selecione um profissional para continuar
+              </p>
+            </div>
+          )}
+
+          {/* PASSO 3: Selecionar Horário */}
+          {selectedBarber && selectedDate && (
             <div>
               <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Horários disponíveis
+                3. Escolha o horário
               </h3>
-              <div className="grid grid-cols-3 gap-2">
-                {AVAILABLE_TIMES.map((time) => (
-                  <Button
-                    key={time}
-                    variant={selectedTime === time ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedTime(time)}
-                    className="text-sm"
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
+
+              {isLoadingTimes ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : availableTimes.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {availableTimes.map((time) => (
+                    <Button
+                      key={time}
+                      variant={selectedTime === time ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setSelectedTime(time)}
+                      className="text-sm"
+                    >
+                      {time}
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-muted-foreground/30 p-6 text-center">
+                  <Clock className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">
+                    Não há horários disponíveis para esta data
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tente selecionar outra data
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Seção: Selecionar Profissional */}
-          {selectedDate && selectedTime && (
-            <div>
-              <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Escolha o profissional
-              </h3>
-              <div className="grid grid-cols-1 gap-2">
-                {barbers.map((barber) => (
-                  <Button
-                    key={barber.id}
-                    variant={selectedBarber === barber.id ? 'default' : 'outline'}
-                    onClick={() => setSelectedBarber(barber.id)}
-                    className="justify-start h-auto py-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span>{barber.name}</span>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Seção: Dados do Cliente */}
-          {selectedDate && selectedTime && selectedBarber && (
+          {/* PASSO 4: Dados do Cliente */}
+          {selectedBarber && selectedDate && selectedTime && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Seus dados</h3>
+              <h3 className="text-sm font-semibold">4. Seus dados</h3>
               <div className="space-y-2">
                 <div>
                   <label htmlFor="name" className="text-sm text-muted-foreground">
@@ -283,10 +384,13 @@ export function BookingItem({
           )}
 
           {/* Resumo do agendamento */}
-          {selectedDate && selectedTime && selectedBarber && customerName && customerPhone && (
+          {selectedBarber && selectedDate && selectedTime && selectedBarberData && customerName && customerPhone && (
             <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
               <h3 className="text-sm font-semibold">Resumo do Agendamento</h3>
               <div className="space-y-1 text-sm text-muted-foreground">
+                <p>
+                  <span className="font-medium">Profissional:</span> {selectedBarberData.name}
+                </p>
                 <p>
                   <span className="font-medium">Serviço:</span> {service.name}
                 </p>
@@ -320,15 +424,22 @@ export function BookingItem({
             size="lg"
             onClick={handleConfirmBooking}
             disabled={
+              !selectedBarber ||
               !selectedDate ||
               !selectedTime ||
-              !selectedBarber ||
               !customerName.trim() ||
               !customerPhone.trim() ||
               isPending
             }
           >
-            {isPending ? 'Processando...' : 'Confirmar Agendamento'}
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              'Confirmar Agendamento'
+            )}
           </Button>
         </div>
       </SheetContent>
