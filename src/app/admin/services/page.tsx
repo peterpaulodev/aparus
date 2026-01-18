@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-import { UserNav } from '@/components/admin/user-nav';
+import { AdminHeader } from '@/components/admin/admin-header';
 import { ServicesList } from '@/app/admin/services/_components/services-list';
 
 export default async function ServicesPage() {
@@ -36,14 +36,7 @@ export default async function ServicesPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Gerenciar Serviços
-          </h1>
-          <UserNav user={session.user} />
-        </div>
-      </header>
+      <AdminHeader title="Gerenciar Serviços" user={session.user} />
 
       <main className="container mx-auto px-4 py-8">
         <ServicesList

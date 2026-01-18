@@ -13,6 +13,7 @@ import { createAdminBooking } from '@/app/_actions/create-admin-booking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   customerType: z.enum(['existing', 'new']),
@@ -125,7 +126,7 @@ export function CreateBookingDialog({
 
           {/* Dialog */}
           <div className="fixed left-[50%] top-[50%] z-50 max-h-[90vh] w-full max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto rounded-lg border bg-background p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">Novo Agendamento</h2>
               <Button
                 variant="ghost"
@@ -137,30 +138,32 @@ export function CreateBookingDialog({
               </Button>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {/* Cliente */}
               <div className="space-y-2">
                 <Label>Cliente</Label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="new"
-                      {...register('customerType')}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm">Novo Cliente</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="existing"
-                      {...register('customerType')}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm">Cliente Existente</span>
-                  </label>
-                </div>
+                <RadioGroup
+                  defaultValue="new"
+                  onValueChange={(value) => {
+                    register('customerType').onChange({
+                      target: { value, name: 'customerType' },
+                    });
+                  }}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="new" id="new" />
+                    <Label htmlFor="new" className="font-normal cursor-pointer">
+                      Novo Cliente
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="existing" id="existing" />
+                    <Label htmlFor="existing" className="font-normal cursor-pointer">
+                      Cliente Existente
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
 
               {customerType === 'new' ? (

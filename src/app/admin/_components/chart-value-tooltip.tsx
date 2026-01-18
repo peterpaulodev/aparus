@@ -7,7 +7,7 @@ interface ChartValueTooltipProps {
  * Componente de tooltip personalizado para gráficos
  * Exibe o valor formatado como moeda brasileira (BRL)
  */
-export const CustomTooltip = ({
+export const ChartValueTooltip = ({
   active,
   payload,
 }: ChartValueTooltipProps) => {

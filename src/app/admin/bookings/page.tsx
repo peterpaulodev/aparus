@@ -6,7 +6,7 @@ import { ptBR } from 'date-fns/locale';
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-import { UserNav } from '@/components/admin/user-nav';
+import { AdminHeader } from '@/components/admin/admin-header';
 import { BookingAdminItem } from '@/app/admin/bookings/_components/booking-admin-item';
 import { DateFilter } from '@/app/admin/bookings/_components/date-filter';
 import { CreateBookingDialog } from '@/app/admin/bookings/_components/create-booking-dialog';
@@ -95,83 +95,86 @@ export default async function AdminBookingsPage({
   ]);
 
   return (
-    <div className="container mx-auto space-y-6 p-4 md:p-8">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Agendamentos</h1>
-          <p className="text-muted-foreground">
-            Gerir os agendamentos de {barbershop.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <AdminHeader
+        barbershop={barbershop}
+        user={session.user}
+      />
+
+      <div className="container mx-auto space-y-6 p-4 md:p-8">
+        <div className="flex md:flex-row flex-col gap-4 md:items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Agendamentos</h2>
+            <p className="text-muted-foreground">
+              Gerir os agendamentos de {barbershop.name}
+            </p>
+          </div>
           <CreateBookingDialog
             customers={customers}
             services={services}
             barbers={barbersData}
           />
-          <UserNav user={session.user} />
         </div>
-      </div>
+        {/* Filtro de Data */}
+        <div className="max-w-md">
+          <DateFilter />
+        </div>
 
-      {/* Filtro de Data */}
-      <div className="max-w-md">
-        <DateFilter />
-      </div>
-
-      {/* Lista de Agendamentos */}
-      {bookings.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              Agenda Livre
-            </CardTitle>
-            <CardDescription>
-              Não há agendamentos para{' '}
-              {format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
-                locale: ptBR,
-              })}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {/* Lista de Agendamentos */}
+        {bookings.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Agenda Livre
+              </CardTitle>
+              <CardDescription>
+                Não há agendamentos para{' '}
+                {format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
+                  locale: ptBR,
+                })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Os agendamentos para este dia aparecerão aqui.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Os agendamentos para este dia aparecerão aqui.
+              {bookings.length} {bookings.length === 1 ? 'agendamento' : 'agendamentos'} para{' '}
+              {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {bookings.length} {bookings.length === 1 ? 'agendamento' : 'agendamentos'} para{' '}
-            {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
-          </p>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {bookings.map((booking) => (
-              <BookingAdminItem
-                key={booking.id}
-                booking={{
-                  id: booking.id,
-                  date: booking.date,
-                  status: booking.status,
-                  service: {
-                    name: booking.service.name,
-                    price: Number(booking.service.price),
-                  },
-                  customer: {
-                    name: booking.customer.name,
-                    phone: booking.customer.phone,
-                  },
-                  barber: {
-                    name: booking.barber.name,
-                    avatarUrl: booking.barber.avatarUrl,
-                  },
-                }}
-              />
-            ))}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {bookings.map((booking) => (
+                <BookingAdminItem
+                  key={booking.id}
+                  booking={{
+                    id: booking.id,
+                    date: booking.date,
+                    status: booking.status,
+                    service: {
+                      name: booking.service.name,
+                      price: Number(booking.service.price),
+                    },
+                    customer: {
+                      name: booking.customer.name,
+                      phone: booking.customer.phone,
+                    },
+                    barber: {
+                      name: booking.barber.name,
+                      avatarUrl: booking.barber.avatarUrl,
+                    },
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

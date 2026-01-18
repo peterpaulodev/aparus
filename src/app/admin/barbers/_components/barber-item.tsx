@@ -93,7 +93,7 @@ export function BarberItem({ barber, onEdit }: BarberItemProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Botões de Ação */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               className="flex-1"

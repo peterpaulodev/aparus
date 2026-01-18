@@ -37,7 +37,7 @@ export function BarbersList({ barbers }: BarbersListProps) {
   return (
     <div className="space-y-6">
       {/* Header da Lista */}
-      <div className="flex items-center justify-between">
+      <div className="flex md:flex-row flex-col gap-4 md:items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Minha Equipe</h2>
           <p className="text-muted-foreground">

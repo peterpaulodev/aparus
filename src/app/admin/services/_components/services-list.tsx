@@ -38,7 +38,7 @@ export function ServicesList({ services }: ServicesListProps) {
   return (
     <div className="space-y-6">
       {/* Header da Lista */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-6 md:items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Meus Serviços</h2>
           <p className="text-muted-foreground">

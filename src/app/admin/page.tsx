@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import Link from 'next/link';
-import { Calendar, DollarSign, Settings, UserCircle, TrendingUp, Scissors } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Scissors } from 'lucide-react';
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-import { UserNav } from '@/components/admin/user-nav';
+import { AdminHeader } from '@/components/admin/admin-header';
 import { BookingItem } from '@/app/admin/_components/booking-item';
 import { CreateBarbershopForm } from '@/app/admin/_components/create-barbershop-form';
 import { OverviewChart } from '@/app/admin/_components/overview-chart';
@@ -62,36 +62,14 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Painel de Controle
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            {barbershop && (
-              <>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin/services">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Gerir Serviços
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/admin/barbers">
-                    <UserCircle className="mr-2 h-4 w-4" />
-                    Minha Equipe
-                  </Link>
-                </Button>
-              </>
-            )}
-            <UserNav user={session.user} />
-          </div>
-        </div>
-      </header>
+      <AdminHeader
+        showLogo
+        showNavigation
+        barbershop={barbershop}
+        user={session.user}
+      />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-6 py-8">
         {/* Estado: Sem Barbearia */}
         {!barbershop && (
           <Card className="mx-auto max-w-2xl">
