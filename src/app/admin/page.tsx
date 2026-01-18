@@ -1,15 +1,17 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import Link from 'next/link';
-import { Calendar, DollarSign, Settings, UserCircle } from 'lucide-react';
+import { Calendar, DollarSign, Settings, UserCircle, TrendingUp, Scissors } from 'lucide-react';
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import { UserNav } from '@/components/admin/user-nav';
 import { BookingItem } from '@/app/admin/_components/booking-item';
 import { CreateBarbershopForm } from '@/app/admin/_components/create-barbershop-form';
+import { OverviewChart } from '@/app/admin/_components/overview-chart';
+import { getDashboardMetrics } from '@/app/_actions/get-dashboard-metrics';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatPrice } from '@/lib/utils';
 
 export default async function AdminPage() {
@@ -25,41 +27,37 @@ export default async function AdminPage() {
     where: {
       ownerId: session.user.id,
     },
-    include: {
-      bookings: {
-        include: {
-          customer: true,
-          service: true,
-          barber: true,
-        },
-        orderBy: {
-          date: 'desc',
-        },
-      },
-    },
   });
 
-  // Calcular estatísticas
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const todayBookings = barbershop?.bookings.filter((booking) => {
-    const bookingDate = new Date(booking.date);
-    return bookingDate >= today && bookingDate < tomorrow;
-  }) || [];
-
-  const todayRevenue = todayBookings.reduce((total, booking) => {
-    if (booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') {
-      return total + Number(booking.service.price);
+  // 3. Buscar métricas do dashboard
+  let metrics = null;
+  if (barbershop) {
+    const result = await getDashboardMetrics();
+    if (result.success) {
+      metrics = result.metrics;
     }
-    return total;
-  }, 0);
+  }
 
-  const upcomingBookings = barbershop?.bookings.filter((booking) => {
-    return new Date(booking.date) >= new Date();
-  }) || [];
+  // 4. Buscar últimos agendamentos
+  const upcomingBookings = barbershop
+    ? await prisma.booking.findMany({
+      where: {
+        barbershopId: barbershop.id,
+        date: {
+          gte: new Date(),
+        },
+      },
+      include: {
+        customer: true,
+        service: true,
+        barber: true,
+      },
+      orderBy: {
+        date: 'asc',
+      },
+      take: 5,
+    })
+    : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -70,6 +68,8 @@ export default async function AdminPage() {
             <h1 className="text-2xl font-bold tracking-tight">
               Painel de Controle
             </h1>
+          </div>
+          <div className="flex items-center gap-4">
             {barbershop && (
               <>
                 <Button variant="outline" size="sm" asChild>
@@ -86,8 +86,8 @@ export default async function AdminPage() {
                 </Button>
               </>
             )}
+            <UserNav user={session.user} />
           </div>
-          <UserNav user={session.user} />
         </div>
       </header>
 
@@ -111,7 +111,7 @@ export default async function AdminPage() {
         )}
 
         {/* Estado: Com Barbearia */}
-        {barbershop && (
+        {barbershop && metrics && (
           <div className="space-y-8">
             {/* Nome da Barbearia */}
             <div>
@@ -123,26 +123,18 @@ export default async function AdminPage() {
               </p>
             </div>
 
-            {/* Cards de Resumo */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {/* Total de Agendamentos */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Agendamentos Hoje
-                  </CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{todayBookings.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {todayBookings.length === 1 ? 'agendamento' : 'agendamentos'} para hoje
-                  </p>
-                </CardContent>
-              </Card>
+            {/* Resumo Financeiro - Header */}
+            <div>
+              <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Resumo Financeiro
+              </h3>
+            </div>
 
-              {/* Faturamento Estimado */}
-              <Card>
+            {/* Grid de KPIs */}
+            <div className="grid gap-4 md:grid-cols-3">
+              {/* Card 1: Faturamento Hoje (Destaque) */}
+              <Card className="md:col-span-1">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Faturamento Hoje
@@ -150,40 +142,75 @@ export default async function AdminPage() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatPrice(todayRevenue)}
+                  <div className="text-3xl font-bold">
+                    {formatPrice(metrics.todayRevenue)}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Estimativa baseada em agendamentos confirmados
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Serviços concluídos hoje
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Próximos Agendamentos */}
+              {/* Card 2: Faturamento Mensal */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Próximos Agendamentos
+                    Faturamento Mensal
                   </CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {upcomingBookings.length}
+                    {formatPrice(metrics.monthRevenue)}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Agendamentos futuros
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Total do mês atual
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Card 3: Total de Cortes (Mês) */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total de Cortes
+                  </CardTitle>
+                  <Scissors className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {metrics.totalBookings}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Agendamentos no mês
                   </p>
                 </CardContent>
               </Card>
             </div>
 
+            {/* Seção Gráfico */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Receita Diária</CardTitle>
+                <CardDescription>
+                  Últimos 7 dias de faturamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                <OverviewChart data={metrics.dailyRevenueChart} />
+              </CardContent>
+            </Card>
+
             {/* Seção: Próximos Agendamentos */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold tracking-tight">
+                <h3 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
                   Próximos Agendamentos
                 </h3>
+                <Button variant="outline" size="sm" asChild>
+                  <Link href="/admin/bookings">Ver Todos</Link>
+                </Button>
               </div>
 
               {upcomingBookings.length === 0 ? (
@@ -200,7 +227,7 @@ export default async function AdminPage() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {upcomingBookings.map((booking) => (
+                  {upcomingBookings.slice(0, 5).map((booking) => (
                     <BookingItem key={booking.id} booking={booking} />
                   ))}
                 </div>

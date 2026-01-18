@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { deleteBarber } from '@/app/_actions/manage-barbers';
+import { AvailabilityDialog } from './availability-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -21,6 +22,7 @@ interface Barber {
   name: string;
   description: string | null;
   avatarUrl: string | null;
+  availability?: Record<string, unknown>;
 }
 
 interface BarberItemProps {
@@ -32,6 +34,7 @@ export function BarberItem({ barber, onEdit }: BarberItemProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
 
   // Função para obter as iniciais do nome
   const getInitials = (name: string) => {
@@ -91,6 +94,14 @@ export function BarberItem({ barber, onEdit }: BarberItemProps) {
         <CardContent className="space-y-4">
           {/* Botões de Ação */}
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowAvailabilityDialog(true)}
+            >
+              <Clock className="mr-2 h-4 w-4" />
+              Horários
+            </Button>
             <Button
               variant="outline"
               className="flex-1"
@@ -162,6 +173,13 @@ export function BarberItem({ barber, onEdit }: BarberItemProps) {
           </div>
         </div>
       )}
+
+      {/* Dialog de Disponibilidade */}
+      <AvailabilityDialog
+        barber={barber}
+        open={showAvailabilityDialog}
+        onOpenChange={setShowAvailabilityDialog}
+      />
     </>
   );
 }

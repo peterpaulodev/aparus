@@ -86,7 +86,10 @@ model Barber {
   avatarUrl   String?
   description String?
 
-  // Disponibilidade (JSON simples por enquanto)
+  // Disponibilidade: Record<DayOfWeek, string[]>
+  // Formato esperado: { "monday": ["09:00", "09:45", "10:30"], "tuesday": [...], ... }
+  // Cada chave é o dia da semana em inglês (monday, tuesday, wednesday, thursday, friday, saturday, sunday)
+  // Cada valor é um array de strings com os horários disponíveis no formato "HH:mm"
   availability Json?
 
   barbershopId String

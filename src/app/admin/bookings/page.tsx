@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { UserNav } from '@/components/admin/user-nav';
 import { BookingAdminItem } from '@/app/admin/bookings/_components/booking-admin-item';
 import { DateFilter } from '@/app/admin/bookings/_components/date-filter';
+import { CreateBookingDialog } from '@/app/admin/bookings/_components/create-booking-dialog';
 import {
   Card,
   CardContent,
@@ -74,6 +75,25 @@ export default async function AdminBookingsPage({
     },
   });
 
+  // 6. Buscar dados para o formulário de criação
+  const [customers, services, barbersData] = await Promise.all([
+    prisma.customer.findMany({
+      where: { barbershopId: barbershop.id },
+      select: { id: true, name: true, phone: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.service.findMany({
+      where: { barbershopId: barbershop.id },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.barber.findMany({
+      where: { barbershopId: barbershop.id },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+
   return (
     <div className="container mx-auto space-y-6 p-4 md:p-8">
       {/* Header */}
@@ -84,7 +104,14 @@ export default async function AdminBookingsPage({
             Gerir os agendamentos de {barbershop.name}
           </p>
         </div>
-        <UserNav user={session.user} />
+        <div className="flex items-center gap-2">
+          <CreateBookingDialog
+            customers={customers}
+            services={services}
+            barbers={barbersData}
+          />
+          <UserNav user={session.user} />
+        </div>
       </div>
 
       {/* Filtro de Data */}

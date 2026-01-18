@@ -256,3 +256,108 @@ export async function deleteBarber(
     };
   }
 }
+
+// Schema de validação para availability
+const dayAvailabilitySchema = z.object({
+  monday: z.array(z.string()).optional(),
+  tuesday: z.array(z.string()).optional(),
+  wednesday: z.array(z.string()).optional(),
+  thursday: z.array(z.string()).optional(),
+  friday: z.array(z.string()).optional(),
+  saturday: z.array(z.string()).optional(),
+  sunday: z.array(z.string()).optional(),
+});
+
+const updateBarberAvailabilitySchema = z.object({
+  barberId: z.string().min(1, 'ID do barbeiro é obrigatório'),
+  availability: dayAvailabilitySchema,
+});
+
+type UpdateBarberAvailabilityInput = z.infer<typeof updateBarberAvailabilitySchema>;
+
+/**
+ * Server Action: Atualizar disponibilidade de um barbeiro
+ */
+export async function updateBarberAvailability(
+  input: UpdateBarberAvailabilityInput
+): Promise<DeleteResult> {
+  try {
+    // 1. Verificar sessão
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        error: 'Você precisa estar autenticado para gerenciar barbeiros',
+      };
+    }
+
+    // 2. Validar input com Zod
+    const validationResult = updateBarberAvailabilitySchema.safeParse(input);
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0];
+      return {
+        success: false,
+        error: firstError.message,
+      };
+    }
+
+    const { barberId, availability } = validationResult.data;
+
+    // 3. Buscar a barbearia do utilizador
+    const barbershop = await prisma.barbershop.findFirst({
+      where: {
+        ownerId: session.user.id,
+      },
+    });
+
+    if (!barbershop) {
+      return {
+        success: false,
+        error: 'Você não tem uma barbearia cadastrada',
+      };
+    }
+
+    // 4. Verificar se o barbeiro existe e pertence a esta barbearia
+    const barber = await prisma.barber.findUnique({
+      where: { id: barberId },
+    });
+
+    if (!barber) {
+      return {
+        success: false,
+        error: 'Barbeiro não encontrado',
+      };
+    }
+
+    if (barber.barbershopId !== barbershop.id) {
+      return {
+        success: false,
+        error: 'Você não tem permissão para editar a disponibilidade deste barbeiro',
+      };
+    }
+
+    // 5. Atualizar a disponibilidade do barbeiro
+    await prisma.barber.update({
+      where: { id: barberId },
+      data: {
+        availability: availability,
+      },
+    });
+
+    revalidatePath('/admin/barbers');
+    revalidatePath('/admin');
+    revalidatePath(`/${barbershop.slug}`);
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Erro ao atualizar disponibilidade do barbeiro:', error);
+    return {
+      success: false,
+      error: 'Erro ao atualizar a disponibilidade. Tente novamente.',
+    };
+  }
+}
