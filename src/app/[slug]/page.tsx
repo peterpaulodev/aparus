@@ -158,9 +158,9 @@ export default async function BarbershopPage({ params }: Props) {
                     <h3 className="font-semibold text-foreground">
                       {barber.name}
                     </h3>
-                    {barber.email && (
+                    {barber.description && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {barber.email}
+                        {barber.description}
                       </p>
                     )}
                   </CardContent>
