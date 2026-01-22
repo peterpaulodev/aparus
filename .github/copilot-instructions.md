@@ -68,3 +68,7 @@ Lembra-te destas relações principais:
 - Sê conciso e técnico.
 - Ao gerar código, prioriza a legibilidade e sintaxe moderna (ES6+).
 - Comentários no código devem ser em Português para explicar a lógica complexa.
+
+## 6. Documentação Adicional
+
+- Você pode ler as documentações que se encontram no path /docs dentro do repositório para mais detalhes sobre a arquitetura e decisões do projeto.

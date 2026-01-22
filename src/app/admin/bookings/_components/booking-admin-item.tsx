@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Check, X, Loader2, Clock } from 'lucide-react';
+import { Check, X, Loader2, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { updateBookingStatus } from '@/app/_actions/update-booking-status';
@@ -19,6 +19,23 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatPrice } from '@/lib/utils';
+
+const formatPhone = (phone: string) => {
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('55')) {
+    return cleaned;
+  }
+  return `55${cleaned}`;
+};
+
+const formatMessage = (booking: Booking) => {
+  const { customer, service, date } = booking;
+  const bookingDate = new Date(date);
+  const dateStr = format(bookingDate, 'dd/MM');
+  const timeStr = format(bookingDate, 'HH:mm');
+  const message = `✂️ Olá ${customer.name}, confirmamos seu agendamento de ${service.name} para o dia ${dateStr} às ${timeStr}. Posso confirmar?`;
+  return encodeURIComponent(message);
+};
 
 interface Booking {
   id: string;
@@ -122,6 +139,11 @@ export function BookingAdminItem({ booking }: BookingAdminItemProps) {
     }
   };
 
+  const getWhatsAppLink = () => {
+    if (!booking.customer.phone) return '#';
+    return `https://wa.me/${formatPhone(booking.customer.phone)}?text=${formatMessage(booking)}`;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -140,10 +162,27 @@ export function BookingAdminItem({ booking }: BookingAdminItemProps) {
 
       <CardContent className="space-y-4">
         {/* Cliente */}
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Cliente</p>
-          <p className="text-lg font-semibold">{booking.customer.name}</p>
-          <p className="text-sm text-muted-foreground">{booking.customer.phone}</p>
+        <div className='flex items-center justify-between'>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Cliente</p>
+            <p className="text-lg font-semibold">{booking.customer.name}</p>
+            <p className="text-sm text-muted-foreground">{booking.customer.phone}</p>
+          </div>
+
+          <div>
+            {booking.status === 'CONFIRMED' && booking.customer.phone && (
+              <Button asChild variant="outline" className="flex-1">
+                <a
+                  href={getWhatsAppLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="text-[#25D366] mr-2 h-4 w-4" />
+                  Enviar Lembrete
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Serviço */}
@@ -175,7 +214,7 @@ export function BookingAdminItem({ booking }: BookingAdminItemProps) {
 
       {/* Footer com Ações */}
       {booking.status === 'CONFIRMED' && (
-        <CardFooter className="flex gap-2">
+        <CardFooter className="flex flex-wrap gap-2">
           <Button
             className="flex-1"
             onClick={() => handleUpdateStatus('COMPLETED')}
