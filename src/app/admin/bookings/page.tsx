@@ -10,6 +10,7 @@ import { AdminHeader } from '@/components/admin/admin-header';
 import { BookingAdminItem } from '@/app/admin/bookings/_components/booking-admin-item';
 import { DateFilter } from '@/app/admin/bookings/_components/date-filter';
 import { CreateBookingDialog } from '@/app/admin/bookings/_components/create-booking-dialog';
+import { BarberFilter } from '@/app/admin/bookings/_components/barber-filter';
 import {
   Card,
   CardContent,
@@ -21,6 +22,7 @@ import {
 interface AdminBookingsPageProps {
   searchParams: Promise<{
     date?: string;
+    barberId?: string;
   }>;
 }
 
@@ -48,6 +50,7 @@ export default async function AdminBookingsPage({
   // 3. Obter data do filtro (ou usar hoje como padrão)
   const params = await searchParams;
   const dateParam = params.date;
+  const barberId = params.barberId;
   const selectedDate = dateParam
     ? parse(dateParam, 'yyyy-MM-dd', new Date())
     : new Date();
@@ -60,6 +63,7 @@ export default async function AdminBookingsPage({
   const bookings = await prisma.booking.findMany({
     where: {
       barbershopId: barbershop.id,
+      ...(barberId && { barberId }),
       date: {
         gte: startDate,
         lte: endDate,
@@ -89,7 +93,7 @@ export default async function AdminBookingsPage({
     }),
     prisma.barber.findMany({
       where: { barbershopId: barbershop.id },
-      select: { id: true, name: true },
+      select: { id: true, name: true, avatarUrl: true },
       orderBy: { name: 'asc' },
     }),
   ]);
@@ -120,6 +124,9 @@ export default async function AdminBookingsPage({
         <div className="max-w-md">
           <DateFilter />
         </div>
+
+        {/* Filtro de Barbeiros */}
+        <BarberFilter barbers={barbersData} defaultValue={barberId} />
 
         {/* Lista de Agendamentos */}
         {bookings.length === 0 ? (
