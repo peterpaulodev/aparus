@@ -32,7 +32,7 @@ export function DateFilter() {
     <div className="space-y-2">
       <Button
         variant="outline"
-        className="w-full justify-start text-left font-normal"
+        className="w-auto justify-start text-left font-normal"
         onClick={() => setIsCalendarOpen(!isCalendarOpen)}
       >
         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -40,9 +40,10 @@ export function DateFilter() {
       </Button>
 
       {isCalendarOpen && (
-        <div className="rounded-md border bg-background p-3">
+        <div className="rounded-md border bg-background p-3 w-70">
           <Calendar
             mode="single"
+            className='w-full'
             selected={selectedDate}
             onSelect={handleDateSelect}
             locale={ptBR}
