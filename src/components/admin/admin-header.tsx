@@ -169,7 +169,7 @@ export function AdminHeader({
           {/* Logo (Desktop - somente no dashboard) */}
           {showLogo && (
             <Link href="/admin" className="">
-              <Logo width={110} height={110} color="#ffffff" lineColor="#000000" />
+              <Logo width={55} height={55} color="#ffffff" lineColor="#000000" />
             </Link>
           )}
 
