@@ -1,5 +1,7 @@
 {
-  "WillLuke.nextjs.addTypesOnSave": true,
-  "WillLuke.nextjs.hasPrompted": true,
-  "prisma.pinToPrisma6": true
+    "WillLuke.nextjs.addTypesOnSave": true,
+    "WillLuke.nextjs.hasPrompted": true,
+    "prisma.pinToPrisma6": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+   
 }

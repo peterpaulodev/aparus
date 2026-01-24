@@ -37,6 +37,18 @@ export const authOptions: AuthOptions = {
         session.user.barbershopId = user.barbershopId;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Forçar redirecionamento para /admin após login bem-sucedido
+      // Ignorar URL de origem para garantir que sempre vai para admin
+      
+      // Se o callbackUrl for explicitamente /admin, usar esse
+      if (url.includes('/admin')) {
+        return `${baseUrl}/admin`;
+      }
+      
+      // Para qualquer outro caso após autenticação, redirecionar para /admin
+      return `${baseUrl}/admin`;
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
