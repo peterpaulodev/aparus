@@ -28,20 +28,18 @@ const schema = z.object({
   name: z.string().min(1, "O nome é obrigatório"),
   address: z.string().min(1, "O endereço é obrigatório"),
   phone: z.string().min(1, "O telefone é obrigatório"),
-  logoUrl: z.string().optional(), // Url valida ou vazia
+  logoUrl: z.string().optional(),
   bannerUrl: z.string().optional(),
 })
 
 interface EditBarbershopFormProps {
-  barbershop: Barbershop // Recebe os dados atuais para preencher
+  barbershop: Barbershop
 }
 
 export function EditBarbershopForm({ barbershop }: EditBarbershopFormProps) {
-  console.log('🚀 ~ EditBarbershopForm ~ barbershop:', barbershop);
   const router = useRouter()
-  const { uploadFile } = useUpload() // Adiciona loading aqui se o teu hook tiver
+  const { uploadFile } = useUpload()
 
-  // Estado local de loading para uploads individuais se o hook não fornecer
   const [isUploadingBanner, setIsUploadingBanner] = useState(false)
   const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -57,12 +55,10 @@ export function EditBarbershopForm({ barbershop }: EditBarbershopFormProps) {
     },
   })
 
-  // Função auxiliar para lidar com o upload
   const handleImageUpload = async (field: "logoUrl" | "bannerUrl", setLoading: (v: boolean) => void) => {
     try {
       setLoading(true)
       const url = await uploadFile()
-      console.log('🚀 ~ handleImageUpload ~ url:', url);
       if (url) {
         form.setValue(field, url)
         toast.success("Imagem carregada com sucesso!")
@@ -77,7 +73,6 @@ export function EditBarbershopForm({ barbershop }: EditBarbershopFormProps) {
   const onSubmit = async (data: z.infer<typeof schema>) => {
     setIsSubmitting(true)
     try {
-      // Passamos o ID da barbearia junto com os dados
       await updateBarbershop({ ...data, id: barbershop.id })
       toast.success("Barbearia atualizada com sucesso!")
       router.refresh()
@@ -94,7 +89,8 @@ export function EditBarbershopForm({ barbershop }: EditBarbershopFormProps) {
 
         {/* SECÇÃO VISUAL (Capa + Logo) */}
         <Card className="border-border bg-card overflow-hidden">
-          <div className="relative h-48 md:h-64 w-full bg-secondary/30 group">
+          {/* TODO: hidden adicionado para desativar temporariamente o banner */}
+          <div className="relative hidden h-48 md:h-64 w-full bg-secondary/30 group">
             {/* Banner Image */}
             {form.watch("bannerUrl") ? (
               <Image
@@ -126,7 +122,8 @@ export function EditBarbershopForm({ barbershop }: EditBarbershopFormProps) {
 
           <div className="px-6 relative pb-6">
             {/* Logo Image (Posicionado para sobrepor a capa) */}
-            <div className="relative -mt-16 mb-6 inline-block">
+            {/* TODO: adicionar -m-16 a div de baixo quando ativar o banner novamente */}
+            <div className="relative mb-6 inline-block">
               <div className="relative h-32 w-32 rounded-full border-4 border-card bg-secondary overflow-hidden shadow-xl">
                 {form.watch("logoUrl") ? (
                   <Image
@@ -158,7 +155,7 @@ export function EditBarbershopForm({ barbershop }: EditBarbershopFormProps) {
               <div>
                 <CardTitle className="text-xl">Identidade Visual</CardTitle>
                 <CardDescription>
-                  Estas imagens serão exibidas na sua página de agendamento pública.
+                  Essa logo será exibida na sua página de agendamento pública.
                 </CardDescription>
               </div>
             </div>
