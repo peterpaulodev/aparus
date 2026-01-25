@@ -6,12 +6,8 @@ import type { Service } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 import { BookingItem } from '@/components/booking-item';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar';
+
+import { BarberCarousel } from './_components/barber-carousel';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -130,52 +126,19 @@ export default async function BarbershopPage({ params }: Props) {
 
           {barbershop.barbers.length === 0 ? (
             <p className="text-muted-foreground">
-              Nenhum profissional cadastrado no momento.
+              Nenhum profissional ativo no momento.
             </p>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {barbershop.barbers.map((barber) => (
-                <Card key={barber.id} className="text-center">
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-center">
-                      <Avatar className="h-20 w-20 border-2 border-border">
-                        <AvatarImage
-                          src={barber.avatarUrl ?? undefined}
-                          alt={barber.name}
-                        />
-                        <AvatarFallback className="text-lg font-semibold">
-                          {barber.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <h3 className="font-semibold text-foreground">
-                      {barber.name}
-                    </h3>
-                    {barber.description && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {barber.description}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <BarberCarousel barbers={barbershop.barbers} />
           )}
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/50 py-8 mt-12">
+      <footer className="border-t border-border bg-card/50 py-8 mt-5">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>
-            © {new Date().getFullYear()} {barbershop.name}. Todos os direitos
+            © {new Date().getFullYear()} Aparus. Todos os direitos
             reservados.
           </p>
         </div>
