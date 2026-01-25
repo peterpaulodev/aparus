@@ -60,18 +60,23 @@ model VerificationToken {
 // NEGÓCIO (Aparus) -------------------------
 
 model Barbershop {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
+
   logoUrl   String?
+  bannerUrl String?
+
+  address     String?
+  phone       String?
+  description String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Quem é o dono desta barbearia? (Quem recebe o dinheiro)
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  // Os recursos da barbearia
   barbers   Barber[]
   services  Service[]
   bookings  Booking[]
