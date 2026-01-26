@@ -295,7 +295,7 @@ export function BookingItem({
                   onSelect={handleDateChange}
                   locale={ptBR}
                   disabled={(date) => date < new Date()}
-                  className="rounded-md w-full"
+                  className="rounded-md"
                 // Removemos w-full aqui para o calendário não tentar esticar demais
                 />
               </div>
