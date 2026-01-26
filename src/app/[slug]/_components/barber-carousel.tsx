@@ -45,7 +45,7 @@ export function BarberCarousel({ barbers }: BarberListProps) {
                 <Card className="text-center h-full hover:border-primary/50 transition-colors">
                   <CardHeader className="pb-4">
                     <div className="flex justify-center">
-                      <Avatar className="h-20 w-20 border-2 border-primary/20">
+                      <Avatar className="h-25 w-25 border-2 border-primary/20">
                         <AvatarImage
                           src={barber.avatarUrl ?? undefined}
                           alt={barber.name}

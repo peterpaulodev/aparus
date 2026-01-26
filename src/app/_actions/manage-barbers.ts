@@ -18,6 +18,7 @@ const upsertBarberSchema = z.object({
     .string()
     .max(500, 'A descrição não pode exceder 500 caracteres')
     .optional(),
+  avatarUrl: z.string().optional(),
 });
 
 // Schema de validação para delete
@@ -76,7 +77,7 @@ export async function upsertBarber(
       };
     }
 
-    const { id, name, description } = validationResult.data;
+    const { id, name, description, avatarUrl } = validationResult.data;
 
     // 3. Buscar a barbearia do utilizador
     const barbershop = await prisma.barbershop.findFirst({
@@ -119,6 +120,7 @@ export async function upsertBarber(
         data: {
           name,
           description,
+          avatarUrl
         },
       });
 
@@ -138,6 +140,7 @@ export async function upsertBarber(
           description,
           barbershopId: barbershop.id,
           availability: DEFAULT_AVAILABILITY,
+          avatarUrl
         },
       });
 

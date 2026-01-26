@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { User } from 'lucide-react';
+import { User, MapPin, Phone } from 'lucide-react';
 import { Metadata } from 'next';
 import type { Service } from '@prisma/client';
 
@@ -62,7 +62,7 @@ export default async function BarbershopPage({ params }: Props) {
         <div className="container mx-auto px-4 py-8 sm:py-12">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
             {/* Logo/Avatar da barbearia */}
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border-2 border-border sm:h-32 sm:w-32">
+            <div className="relative h-30 w-30 shrink-0 overflow-hidden rounded-lg border-2 border-border sm:h-32 sm:w-32">
               {barbershop.logoUrl ? (
                 <Image
                   src={barbershop.logoUrl}
@@ -79,12 +79,35 @@ export default async function BarbershopPage({ params }: Props) {
             </div>
 
             {/* Nome da barbearia */}
-            <div className="text-center sm:text-left">
+            <div className="text-center sm:text-left space-y-3">
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {barbershop.name}
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                Agende seu horário com facilidade
+
+              <div className="flex flex-col items-center gap-y-2 sm:flex-row sm:gap-x-6 text-sm">
+                {barbershop.address && (
+                  <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span>{barbershop.address}</span>
+                  </div>
+                )}
+                {barbershop.address && barbershop.phone && (
+                  <div className="hidden sm:block w-px h-4 bg-border" />
+                )}
+
+                {/* Item Telefone */}
+                {barbershop.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    {/* Adicionei hover para indicar que é clicável se quiseres transformar em link depois */}
+                    <span>{barbershop.phone}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Descrição */}
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base leading-relaxed max-w-2xl">
+                {barbershop.description ? barbershop.description : 'Agende o seu horário conosco!'}
               </p>
             </div>
           </div>

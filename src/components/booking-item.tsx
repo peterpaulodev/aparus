@@ -74,7 +74,6 @@ export function BookingItem({
           date: selectedDate,
           serviceDuration: service.duration,
         });
-        console.log('🚀 ~ fetchTimes ~ result:', result);
 
         if (cancelled) return;
 
@@ -218,17 +217,23 @@ export function BookingItem({
         </CardContent>
       </Card>
 
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Agendar {service.name}</SheetTitle>
-          <SheetDescription>
-            Siga os passos para fazer seu agendamento
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent className="w-full sm:max-w-lg flex flex-col h-[100dvh] p-0 gap-0">
+        {/* CABEÇALHO (Fixo no topo) */}
+        <div className="p-6 pb-2 border-b">
+          <SheetHeader>
+            <SheetTitle>Agendar {service.name}</SheetTitle>
+            <SheetDescription>
+              Siga os passos para fazer seu agendamento
+            </SheetDescription>
+          </SheetHeader>
+        </div>
 
-        <Separator className="my-4" />
+        {/* CORPO (Scrollável)
+           flex-1: Ocupa todo o espaço disponível no meio.
+           overflow-y-auto: Só essa parte faz scroll.
+        */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
 
-        <div className="space-y-6 px-4 pb-12">
           {/* PASSO 1: Selecionar Profissional */}
           <div>
             <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
@@ -240,6 +245,7 @@ export function BookingItem({
                 <button
                   key={barber.id}
                   onClick={() => handleBarberChange(barber.id)}
+                  type="button" // Importante para não submeter forms acidentalmente
                   className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50 ${selectedBarber === barber.id
                     ? 'border-primary bg-primary/5'
                     : 'border-border'
@@ -281,14 +287,18 @@ export function BookingItem({
                 <CalendarIcon className="h-4 w-4" />
                 2. Selecione a data
               </h3>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={handleDateChange}
-                locale={ptBR}
-                disabled={(date) => date < new Date()}
-                className="rounded-md border w-full"
-              />
+              {/* MUDANÇA 2: Wrapper para o Calendário não quebrar o layout lateralmente */}
+              <div className="border rounded-md p-2 flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateChange}
+                  locale={ptBR}
+                  disabled={(date) => date < new Date()}
+                  className="rounded-md w-full"
+                // Removemos w-full aqui para o calendário não tentar esticar demais
+                />
+              </div>
             </div>
           )}
 
@@ -314,14 +324,15 @@ export function BookingItem({
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : availableTimes.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                  {/* Ajustei o grid para caber mais horários e reduzir altura */}
                   {availableTimes.map((time) => (
                     <Button
                       key={time}
                       variant={selectedTime === time ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setSelectedTime(time)}
-                      className="text-sm"
+                      className="text-xs px-2"
                     >
                       {time}
                     </Button>
@@ -331,10 +342,7 @@ export function BookingItem({
                 <div className="rounded-lg border border-dashed border-muted-foreground/30 p-6 text-center">
                   <Clock className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
                   <p className="text-sm text-muted-foreground">
-                    Não há horários disponíveis para esta data
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Tente selecionar outra data
+                    Sem horários livres
                   </p>
                 </div>
               )}
@@ -343,35 +351,24 @@ export function BookingItem({
 
           {/* PASSO 4: Dados do Cliente */}
           {selectedBarber && selectedDate && selectedTime && (
-            <div className="space-y-3">
+            <div className="space-y-3 pb-4">
               <h3 className="text-sm font-semibold">4. Seus dados</h3>
               <div className="space-y-2">
-                <div>
-                  <label htmlFor="name" className="text-sm text-muted-foreground">
-                    Nome completo
-                  </label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Digite seu nome"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    disabled={isPending}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="text-sm text-muted-foreground">
-                    Telefone
-                  </label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(00) 00000-0000"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    disabled={isPending}
-                  />
-                </div>
+                <Input
+                  id="name"
+                  placeholder="Seu nome completo"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  disabled={isPending}
+                />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Seu telefone / WhatsApp"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  disabled={isPending}
+                />
               </div>
             </div>
           )}
@@ -382,43 +379,21 @@ export function BookingItem({
               {errorMessage}
             </div>
           )}
+        </div>
 
-          {/* Resumo do agendamento */}
-          {selectedBarber && selectedDate && selectedTime && selectedBarberData && customerName && customerPhone && (
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-              <h3 className="text-sm font-semibold">Resumo do Agendamento</h3>
-              <div className="space-y-1 text-sm text-muted-foreground">
-                <p>
-                  <span className="font-medium">Profissional:</span> {selectedBarberData.name}
-                </p>
-                <p>
-                  <span className="font-medium">Serviço:</span> {service.name}
-                </p>
-                <p>
-                  <span className="font-medium">Data:</span>{' '}
-                  {selectedDate.toLocaleDateString('pt-BR', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </p>
-                <p>
-                  <span className="font-medium">Horário:</span> {selectedTime}
-                </p>
-                <p>
-                  <span className="font-medium">Duração:</span>{' '}
-                  {formatDuration(service.duration)}
-                </p>
-                <p className="text-foreground font-semibold pt-1">
-                  <span className="font-medium">Valor:</span>{' '}
-                  {formatPrice(service.price.toString())}
-                </p>
-              </div>
+        {/* RODAPÉ (Fixo no fundo)
+           border-t bg-card: Cria separação visual e garante que o conteúdo não vaze por trás.
+           p-6: Padding generoso para facilitar o clique.
+        */}
+        <div className="p-6 border-t bg-card mt-auto z-10">
+          {/* Resumo compacto opcional antes do botão */}
+          {selectedBarber && selectedDate && selectedTime && service && (
+            <div className="mb-4 flex justify-between text-sm text-muted-foreground">
+              <span>{service.name}</span>
+              <span className="font-bold text-foreground">{formatPrice(service.price.toString())}</span>
             </div>
           )}
 
-          {/* Botão de confirmação */}
           <Button
             className="w-full"
             size="lg"
