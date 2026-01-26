@@ -1,17 +1,13 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { User } from 'lucide-react';
+import { User, MapPin, Phone } from 'lucide-react';
 import { Metadata } from 'next';
 import type { Service } from '@prisma/client';
 
 import { prisma } from '@/lib/prisma';
 import { BookingItem } from '@/components/booking-item';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar';
+
+import { BarberCarousel } from './_components/barber-carousel';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -66,7 +62,7 @@ export default async function BarbershopPage({ params }: Props) {
         <div className="container mx-auto px-4 py-8 sm:py-12">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
             {/* Logo/Avatar da barbearia */}
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border-2 border-border sm:h-32 sm:w-32">
+            <div className="relative h-30 w-30 shrink-0 overflow-hidden rounded-lg border-2 border-border sm:h-32 sm:w-32">
               {barbershop.logoUrl ? (
                 <Image
                   src={barbershop.logoUrl}
@@ -83,12 +79,35 @@ export default async function BarbershopPage({ params }: Props) {
             </div>
 
             {/* Nome da barbearia */}
-            <div className="text-center sm:text-left">
+            <div className="text-center sm:text-left space-y-3">
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 {barbershop.name}
               </h1>
-              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                Agende seu horário com facilidade
+
+              <div className="flex flex-col items-center gap-y-2 sm:flex-row sm:gap-x-6 text-sm">
+                {barbershop.address && (
+                  <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <span>{barbershop.address}</span>
+                  </div>
+                )}
+                {barbershop.address && barbershop.phone && (
+                  <div className="hidden sm:block w-px h-4 bg-border" />
+                )}
+
+                {/* Item Telefone */}
+                {barbershop.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                    <Phone className="h-4 w-4 text-primary shrink-0" />
+                    {/* Adicionei hover para indicar que é clicável se quiseres transformar em link depois */}
+                    <span>{barbershop.phone}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Descrição */}
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base leading-relaxed max-w-2xl">
+                {barbershop.description ? barbershop.description : 'Agende o seu horário conosco!'}
               </p>
             </div>
           </div>
@@ -130,52 +149,19 @@ export default async function BarbershopPage({ params }: Props) {
 
           {barbershop.barbers.length === 0 ? (
             <p className="text-muted-foreground">
-              Nenhum profissional cadastrado no momento.
+              Nenhum profissional ativo no momento.
             </p>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {barbershop.barbers.map((barber) => (
-                <Card key={barber.id} className="text-center">
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-center">
-                      <Avatar className="h-20 w-20 border-2 border-border">
-                        <AvatarImage
-                          src={barber.avatarUrl ?? undefined}
-                          alt={barber.name}
-                        />
-                        <AvatarFallback className="text-lg font-semibold">
-                          {barber.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <h3 className="font-semibold text-foreground">
-                      {barber.name}
-                    </h3>
-                    {barber.description && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {barber.description}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <BarberCarousel barbers={barbershop.barbers} />
           )}
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/50 py-8 mt-12">
+      <footer className="border-t border-border bg-card/50 py-8 mt-5">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>
-            © {new Date().getFullYear()} {barbershop.name}. Todos os direitos
+            © {new Date().getFullYear()} Aparus. Todos os direitos
             reservados.
           </p>
         </div>

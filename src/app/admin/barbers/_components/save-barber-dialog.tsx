@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UploadCloud } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 import { upsertBarber } from '@/app/_actions/manage-barbers';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useUpload } from '@/lib/hooks/use-upload';
 
 // Schema de validação (deve corresponder ao da Server Action)
 const formSchema = z.object({
@@ -32,6 +34,7 @@ const formSchema = z.object({
     .string()
     .max(500, 'A descrição não pode exceder 500 caracteres')
     .optional(),
+  avatarUrl: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,6 +58,9 @@ export function SaveBarberDialog({
 }: SaveBarberDialogProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const { uploadFile } = useUpload();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -90,6 +96,7 @@ export function SaveBarberDialog({
         id: values.id,
         name: values.name,
         description: values.description || undefined,
+        avatarUrl: values.avatarUrl,
       });
 
       if (result.success) {
@@ -131,6 +138,21 @@ export function SaveBarberDialog({
     }
   };
 
+  const handleImageUpload = async (field: 'avatarUrl', setLoading: (v: boolean) => void) => {
+    try {
+      setLoading(true);
+      const url = await uploadFile();
+      if (url) {
+        form.setValue(field, url);
+        toast.success('Imagem carregada com sucesso!');
+      }
+    } catch {
+      toast.error('Erro ao fazer upload da imagem, tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div
       className={`fixed inset-0 z-50 ${open ? 'block' : 'hidden'}`}
@@ -156,7 +178,52 @@ export function SaveBarberDialog({
 
           {/* Form */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+
+              {/* Campo: Avatar */}
+              <FormField
+                control={form.control}
+                name="avatarUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Avatar do Barbeiro</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center gap-4">
+                        {field.value ? (
+                          <div className="relative h-20 w-20 rounded-full overflow-hidden border">
+                            <Image
+                              src={field.value}
+                              alt="Avatar do Barbeiro"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-20 w-20 flex items-center justify-center rounded-full bg-muted-foreground text-background">
+                            <span className="text-sm">Sem Avatar</span>
+                          </div>
+                        )}
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleImageUpload('avatarUrl', setIsUploadingAvatar)}
+                          disabled={isUploadingAvatar}
+                        >
+                          {isUploadingAvatar ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <UploadCloud className="mr-2 h-4 w-4" />
+                          )}
+                          {isUploadingAvatar ? 'Carregando...' : 'Alterar Avatar'}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Campo: Nome */}
               <FormField
                 control={form.control}
