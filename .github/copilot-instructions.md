@@ -71,4 +71,15 @@ Lembra-te destas relações principais:
 
 ## 6. Documentação Adicional
 
-- Você pode ler as documentações que se encontram no path /docs dentro do repositório para mais detalhes sobre a arquitetura e decisões do projeto.
+- **IMPORTANTE:** Antes de responder a qualquer questão ou gerar código, **verifica sempre a documentação disponível no diretório `/docs`** do repositório para garantir contexto completo sobre:
+  - Arquitetura do sistema
+  - Decisões técnicas tomadas
+  - Padrões específicos implementados
+  - Fluxos de dados e integração
+  - Convenções e guidelines do projeto
+  
+- Usa a documentação como fonte primária de verdade para decisões de implementação.
+- Se encontrares conflito entre estas instruções e a documentação em `/docs`, dá prioridade à este documento.
+- Menciona explicitamente qual documento de `/docs` consultaste ao fornecer respostas técnicas.
+- Após a implementação de qualquer funcionalidade, sugere atualizações ou adições relevantes à documentação em `/docs` para manter o conhecimento atualizado.
+- Crie também um ADHOC.md em `/docs` para registar decisões técnicas ou fluxos que não estejam documentados atualmente.
