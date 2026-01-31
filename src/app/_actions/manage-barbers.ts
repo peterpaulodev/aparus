@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import { extractFileKey, utapi } from '@/lib/uploadthing';
 
 // Schema de validação para upsert
 const upsertBarberSchema = z.object({
@@ -112,6 +113,18 @@ export async function upsertBarber(
           success: false,
           error: 'Você não tem permissão para editar este barbeiro',
         };
+      }
+
+      if (
+        avatarUrl &&
+        existingBarber.avatarUrl &&
+        avatarUrl !== existingBarber.avatarUrl
+      ) {
+        const key = extractFileKey(existingBarber.avatarUrl)
+        if (key) {
+          await utapi.deleteFiles(key)
+          console.log(`🗑️ Avatar antigo deletado: ${key}`)
+        }
       }
 
       // Atualizar barbeiro existente
@@ -243,6 +256,15 @@ export async function deleteBarber(
     await prisma.barber.delete({
       where: { id },
     });
+
+    // 7. Deletar avatar do barbeiro se existir
+    if (barber.avatarUrl) {
+      const key = extractFileKey(barber.avatarUrl)
+      if (key) {
+        await utapi.deleteFiles(key)
+        console.log(`🗑️ Avatar deletado: ${key}`)
+      }
+    }
 
     revalidatePath('/admin/barbers');
     revalidatePath('/admin');
