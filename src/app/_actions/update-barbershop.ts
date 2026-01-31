@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { extractFileKey, utapi } from "@/lib/uploadthing"
 
 // O Schema deve bater com o do formulário
 const updateBarbershopSchema = z.object({
@@ -25,16 +26,39 @@ export async function updateBarbershop(params: UpdateBarbershopParams) {
     throw new Error("Unauthorized")
   }
 
-  // Validação extra: Verificar se o user é mesmo dono desta barbearia
   const userBarbershop = await prisma.barbershop.findUnique({
     where: {
       id: params.id,
-      ownerId: session.user.id, // Garante segurança
+      ownerId: session.user.id,
     }
   })
 
   if (!userBarbershop) {
     throw new Error("Barbearia não encontrada ou sem permissão.")
+  }
+
+  if (
+    params.logoUrl &&
+    userBarbershop.logoUrl &&
+    params.logoUrl !== userBarbershop.logoUrl
+  ) {
+    const key = extractFileKey(userBarbershop.logoUrl)
+    if (key) {
+      await utapi.deleteFiles(key)
+      console.log(`🗑️ Logo antigo deletado: ${key}`)
+    }
+  }
+
+  if (
+    params.bannerUrl &&
+    userBarbershop.bannerUrl &&
+    params.bannerUrl !== userBarbershop.bannerUrl
+  ) {
+    const key = extractFileKey(userBarbershop.bannerUrl)
+    if (key) {
+      await utapi.deleteFiles(key)
+      console.log(`🗑️ Banner antigo deletado: ${key}`)
+    }
   }
 
   await prisma.barbershop.update({
