@@ -158,12 +158,24 @@ export default async function BarbershopPage({ params }: Props) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/50 py-8 mt-5">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>
-            © {new Date().getFullYear()} Aparus. Todos os direitos
-            reservados.
+      <footer className="mt-auto border-t border-border bg-card/50 py-10">
+        <div className="container mx-auto px-4 flex flex-col items-center gap-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} {barbershop.name}.
           </p>
+
+          <a
+            href="https://wa.me/5516994490199?text=Gostaria%20de%20saber%20mais%20sobre%20a%20Aparus"
+            target="_blank"
+            className="flex items-center gap-2 rounded-full bg-secondary/50 px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+          >
+            <span className="opacity-70">Agendamentos via</span>
+            <div className="flex items-center gap-1.5">
+              {/* Se tiveres o logo SVG pequeno, coloca aqui, senão usa texto estilizado */}
+              <span className="font-bold tracking-wider text-foreground">APARUS</span>
+            </div>
+          </a>
+
         </div>
       </footer>
     </div>

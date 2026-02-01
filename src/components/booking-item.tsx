@@ -27,7 +27,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Separator } from "@/components/ui/separator"
-
+import { useRouter } from 'next/navigation';
 import { formatPrice, formatDuration } from '@/lib/utils';
 
 type BookingItemProps = {
@@ -41,6 +41,7 @@ export function BookingItem({
   service,
   barbers,
   barbershopId,
+  barbershopSlug,
 }: BookingItemProps) {
   // Estados
   const [selectedBarber, setSelectedBarber] = useState<string | undefined>(undefined);
@@ -53,6 +54,8 @@ export function BookingItem({
   const [isOpen, setIsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const router = useRouter();
 
   // Buscar horários disponíveis quando barbeiro e data mudarem
   useEffect(() => {
@@ -155,22 +158,11 @@ export function BookingItem({
         customerPhone: customerPhone.trim(),
       });
 
-      if (result.success) {
-        toast.success(
-          `Agendamento confirmado com sucesso!\n\nServiço: ${service.name}\nData: ${selectedDate.toLocaleDateString('pt-BR')}\nHorário: ${selectedTime}`
-        );
-
-        // Resetar estado e fechar
-        setSelectedBarber(undefined);
-        setSelectedDate(undefined);
-        setSelectedTime(undefined);
-        setAvailableTimes([]);
-        setCustomerName('');
-        setCustomerPhone('');
-        setErrorMessage(null);
+      if (result.success && result.bookingId) {
         setIsOpen(false);
+        router.push(`/${barbershopSlug}/success?bookingId=${result.bookingId}`);
       } else {
-        setErrorMessage(result.error);
+        setErrorMessage(result?.error || "Tente novamente mais tarde.");
       }
     });
   };
