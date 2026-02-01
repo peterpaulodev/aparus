@@ -14,9 +14,7 @@ type SaveBookingParams = {
   customerPhone: string;
 };
 
-type SaveBookingResult =
-  | { success: true; bookingId: string }
-  | { success: false; error: string };
+type SaveBookingResult = { success: true | false; bookingId?: string; error?: string };
 
 export async function saveBooking(
   params: SaveBookingParams
