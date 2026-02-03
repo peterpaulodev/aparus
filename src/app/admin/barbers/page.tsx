@@ -1,17 +1,17 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { prisma } from '@/lib/prisma';
-import { AdminHeader } from '@/components/admin/admin-header';
-import { BarbersList } from '@/app/admin/barbers/_components/barbers-list';
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+import { AdminHeader } from "@/components/admin/admin-header";
+import { BarbersList } from "@/app/admin/barbers/_components/barbers-list";
 
 export default async function BarbersPage() {
   // 1. Verificar sessão
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
-    redirect('/api/auth/signin');
+    redirect("/api/auth/signin");
   }
 
   // 2. Buscar barbearia do usuário
@@ -22,7 +22,7 @@ export default async function BarbersPage() {
     include: {
       barbers: {
         orderBy: {
-          name: 'asc',
+          name: "asc",
         },
       },
     },
@@ -30,13 +30,18 @@ export default async function BarbersPage() {
 
   // 3. Se não tiver barbearia, redirecionar para criar uma
   if (!barbershop) {
-    redirect('/admin');
+    redirect("/admin");
   }
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <AdminHeader showLogo title="Gerenciar Equipe" user={session.user} />
+      <AdminHeader
+        showLogo
+        showNavigation
+        user={session.user}
+        barbershop={barbershop}
+      />
 
       <main className="container mx-auto px-4 py-8">
         <BarbersList barbers={barbershop.barbers} />
