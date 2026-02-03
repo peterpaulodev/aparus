@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, DollarSign, User, Loader2 } from 'lucide-react';
+import { useState, useTransition, useEffect, useRef } from 'react';
+import { Calendar as CalendarIcon, Clock, DollarSign, User, Loader2, Scissors } from 'lucide-react';
 import { ptBR } from 'date-fns/locale';
 import type { Service, Barber } from '@prisma/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { saveBooking } from '@/app/_actions/save-booking';
 import { getAvailableTimes } from '@/app/_actions/get-available-times';
+import { getCustomerName } from '@/app/_actions/get-customer';
 import {
   Card,
   CardContent,
@@ -26,7 +28,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Separator } from "@/components/ui/separator"
 import { useRouter } from 'next/navigation';
 import { formatPrice, formatDuration } from '@/lib/utils';
 
@@ -51,11 +52,80 @@ export function BookingItem({
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [isLoadingName, setIsLoadingName] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Ref para evitar lookups duplicados
+  const lastLookupPhoneRef = useRef<string>('');
+
+  // Refs para auto-scroll progressivo
+  const dateStepRef = useRef<HTMLDivElement>(null);
+  const timeStepRef = useRef<HTMLDivElement>(null);
+  const formStepRef = useRef<HTMLDivElement>(null);
+
   const router = useRouter();
+
+  // Função para formatar telefone com máscara
+  const formatPhoneNumber = (value: string) => {
+    // Remove tudo que não é dígito
+    const cleaned = value.replace(/\D/g, '');
+
+    // Limita a 11 dígitos
+    const limited = cleaned.slice(0, 11);
+
+    // Aplica a máscara
+    if (limited.length <= 2) {
+      return limited;
+    } else if (limited.length <= 7) {
+      return `(${limited.slice(0, 2)}) ${limited.slice(2)}`;
+    } else if (limited.length <= 10) {
+      return `(${limited.slice(0, 2)}) ${limited.slice(2, 6)}-${limited.slice(6)}`;
+    } else {
+      return `(${limited.slice(0, 2)}) ${limited.slice(2, 7)}-${limited.slice(7)}`;
+    }
+  };
+
+  // Função para buscar nome do cliente pelo telefone
+  const handlePhoneLookup = async (phone: string) => {
+    const normalizedPhone = phone.replace(/\D/g, '');
+
+    // Valida se tem pelo menos 11 dígitos
+    if (normalizedPhone.length < 11) {
+      return;
+    }
+
+    // Evita lookups duplicados
+    if (lastLookupPhoneRef.current === normalizedPhone) {
+      return;
+    }
+
+    // Só busca se o nome estiver vazio
+    if (customerName.trim()) {
+      return;
+    }
+
+    lastLookupPhoneRef.current = normalizedPhone;
+    setIsLoadingName(true);
+
+    try {
+      const result = await getCustomerName({
+        phone: normalizedPhone,
+        barbershopId,
+      });
+
+      if (result.success && result.name) {
+        setCustomerName(result.name);
+        const firstName = result.name.split(' ')[0];
+        toast.success(`Bem-vindo de volta, ${firstName}!`);
+      }
+    } catch (error) {
+      console.error('[PHONE_LOOKUP_ERROR]', error);
+    } finally {
+      setIsLoadingName(false);
+    }
+  };
 
   // Buscar horários disponíveis quando barbeiro e data mudarem
   useEffect(() => {
@@ -107,6 +177,61 @@ export function BookingItem({
       cancelled = true;
     };
   }, [selectedBarber, selectedDate, service.duration]);
+
+  // Auto-lookup quando telefone atingir 11 dígitos
+  useEffect(() => {
+    const normalizedPhone = customerPhone.replace(/\D/g, '');
+
+    if (normalizedPhone.length === 11) {
+      const timeoutId = setTimeout(() => {
+        handlePhoneLookup(customerPhone);
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [customerPhone, barbershopId]);
+
+  // Auto-scroll: quando seleciona barbeiro, mostra calendário
+  useEffect(() => {
+    if (selectedBarber && dateStepRef.current) {
+      const timeoutId = setTimeout(() => {
+        dateStepRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedBarber]);
+
+  // Auto-scroll: quando seleciona data, mostra horários
+  useEffect(() => {
+    if (selectedDate && timeStepRef.current) {
+      const timeoutId = setTimeout(() => {
+        timeStepRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedDate]);
+
+  // Auto-scroll: quando seleciona horário, mostra formulário
+  useEffect(() => {
+    if (selectedTime && formStepRef.current) {
+      const timeoutId = setTimeout(() => {
+        formStepRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedTime]);
 
   // Resetar data e horário quando trocar de barbeiro
   const handleBarberChange = (barberId: string) => {
@@ -229,7 +354,7 @@ export function BookingItem({
           {/* PASSO 1: Selecionar Profissional */}
           <div>
             <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
-              <User className="h-4 w-4" />
+              <Scissors className="h-4 w-4" />
               1. Escolha o profissional
             </h3>
             <div className="grid grid-cols-1 gap-3">
@@ -237,7 +362,7 @@ export function BookingItem({
                 <button
                   key={barber.id}
                   onClick={() => handleBarberChange(barber.id)}
-                  type="button" // Importante para não submeter forms acidentalmente
+                  type="button"
                   className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50 ${selectedBarber === barber.id
                     ? 'border-primary bg-primary/5'
                     : 'border-border'
@@ -274,7 +399,7 @@ export function BookingItem({
 
           {/* PASSO 2: Selecionar Data */}
           {selectedBarber && (
-            <div>
+            <div ref={dateStepRef}>
               <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
                 <CalendarIcon className="h-4 w-4" />
                 2. Selecione a data
@@ -305,7 +430,7 @@ export function BookingItem({
 
           {/* PASSO 3: Selecionar Horário */}
           {selectedBarber && selectedDate && (
-            <div>
+            <div ref={timeStepRef}>
               <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 3. Escolha o horário
@@ -343,24 +468,46 @@ export function BookingItem({
 
           {/* PASSO 4: Dados do Cliente */}
           {selectedBarber && selectedDate && selectedTime && (
-            <div className="space-y-3 pb-4">
-              <h3 className="text-sm font-semibold">4. Seus dados</h3>
-              <div className="space-y-2">
-                <Input
-                  id="name"
-                  placeholder="Seu nome completo"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  disabled={isPending}
-                />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Seu telefone / WhatsApp"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  disabled={isPending}
-                />
+            <div ref={formStepRef} className="space-y-3 pb-4">
+              <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
+                <User className="h-4 w-4" />
+                4. Seus dados
+              </h3>
+              <div className="space-y-4 border p-4 rounded-md">
+                {/* Telefone primeiro */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone/WhatsApp</Label>
+                  <div className="relative">
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="(99) 99999-9999"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
+                      onBlur={(e) => handlePhoneLookup(e.target.value)}
+                      disabled={isPending}
+                      autoComplete="tel"
+                    />
+                    {isLoadingName && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Usaremos para enviar a confirmação do agendamento.
+                  </p>
+                </div>
+                {/* Nome depois */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome completo</Label>
+                  <Input
+                    id="name"
+                    placeholder="Digite seu nome"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    disabled={isPending}
+                    autoComplete="name"
+                  />
+                </div>
               </div>
             </div>
           )}
