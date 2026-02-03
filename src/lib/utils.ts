@@ -34,3 +34,29 @@ export function formatDuration(minutes: number): string {
   }
   return `${hours}h ${remainingMinutes}min`;
 }
+
+/**
+ * Formata número de telefone para padrão brasileiro (XX) XXXXX-XXXX
+ * @param phone - Número de telefone (com ou sem formatação)
+ * @returns String formatada como "(21) 98765-4321" ou "(21) 3456-7890"
+ */
+export function formatPhoneNumber(phone: string): string {
+  const cleaned = phone.replace(/\D/g, "");
+  
+  // Remove código do país se presente (55)
+  const withoutCountryCode = cleaned.startsWith("55")
+    ? cleaned.substring(2)
+    : cleaned;
+
+  // Formata para (XX) XXXXX-XXXX (celular)
+  if (withoutCountryCode.length === 11) {
+    return `(${withoutCountryCode.substring(0, 2)}) ${withoutCountryCode.substring(2, 7)}-${withoutCountryCode.substring(7)}`;
+  }
+
+  // Formata para (XX) XXXX-XXXX (telefone fixo)
+  if (withoutCountryCode.length === 10) {
+    return `(${withoutCountryCode.substring(0, 2)}) ${withoutCountryCode.substring(2, 6)}-${withoutCountryCode.substring(6)}`;
+  }
+
+  return phone; // Retorna original se não puder formatar
+}

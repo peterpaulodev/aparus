@@ -1,25 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, Clock, DollarSign, User, Loader2, Scissors } from 'lucide-react';
-import { ptBR } from 'date-fns/locale';
-import type { Service, Barber } from '@prisma/client';
-import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { saveBooking } from '@/app/_actions/save-booking';
-import { getAvailableTimes } from '@/app/_actions/get-available-times';
-import { getCustomerName } from '@/app/_actions/get-customer';
+import { useState, useTransition, useEffect, useRef } from "react";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  DollarSign,
+  User,
+  Loader2,
+  Scissors,
+} from "lucide-react";
+import { ptBR } from "date-fns/locale";
+import type { Service, Barber } from "@prisma/client";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { saveBooking } from "@/app/_actions/save-booking";
+import { getAvailableTimes } from "@/app/_actions/get-available-times";
+import { getCustomerName } from "@/app/_actions/get-customer";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
@@ -27,9 +34,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@/components/ui/sheet';
-import { useRouter } from 'next/navigation';
-import { formatPrice, formatDuration } from '@/lib/utils';
+} from "@/components/ui/sheet";
+import { useRouter } from "next/navigation";
+import { formatPrice, formatDuration } from "@/lib/utils";
 
 type BookingItemProps = {
   service: Service;
@@ -45,20 +52,26 @@ export function BookingItem({
   barbershopSlug,
 }: BookingItemProps) {
   // Estados
-  const [selectedBarber, setSelectedBarber] = useState<string | undefined>(undefined);
+  const [selectedBarber, setSelectedBarber] = useState<string | undefined>(
+    undefined,
+  );
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(
+    undefined,
+  );
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [isLoadingTimes, setIsLoadingTimes] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [isPhoneValid, setIsPhoneValid] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [isLoadingName, setIsLoadingName] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Ref para evitar lookups duplicados
-  const lastLookupPhoneRef = useRef<string>('');
+  const lastLookupPhoneRef = useRef<string>("");
 
   // Refs para auto-scroll progressivo
   const dateStepRef = useRef<HTMLDivElement>(null);
@@ -67,10 +80,46 @@ export function BookingItem({
 
   const router = useRouter();
 
+  // Função para validar telefone brasileiro
+  const validateBrazilianPhone = (
+    phone: string,
+  ): { isValid: boolean; error: string | null } => {
+    const cleaned = phone.replace(/\D/g, "");
+
+    // Deve ter exatamente 11 dígitos
+    if (cleaned.length === 0) {
+      return { isValid: false, error: null };
+    }
+
+    if (cleaned.length < 11) {
+      return { isValid: false, error: "Telefone incompleto" };
+    }
+
+    if (cleaned.length > 11) {
+      return { isValid: false, error: "Telefone inválido" };
+    }
+
+    // Extrair DDD e número
+    const ddd = parseInt(cleaned.slice(0, 2));
+    const firstDigit = cleaned[2];
+
+    // Validar DDD (11 a 99)
+    if (ddd < 11 || ddd > 99) {
+      return { isValid: false, error: "DDD inválido" };
+    }
+
+    // Validar se é celular (começa com 9)
+    if (firstDigit !== "9") {
+      return { isValid: false, error: "Apenas celulares (9XXXX-XXXX)" };
+    }
+
+    return { isValid: true, error: null };
+  };
+
   // Função para formatar telefone com máscara
   const formatPhoneNumber = (value: string) => {
     // Remove tudo que não é dígito
-    const cleaned = value.replace(/\D/g, '');
+    const cleaned = value.replace(/\D/g, "");
 
     // Limita a 11 dígitos
     const limited = cleaned.slice(0, 11);
@@ -87,12 +136,24 @@ export function BookingItem({
     }
   };
 
+  // Handler para mudança de telefone com validação
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhoneNumber(value);
+    setCustomerPhone(formatted);
+
+    // Validar o telefone
+    const validation = validateBrazilianPhone(formatted);
+    setIsPhoneValid(validation.isValid);
+    setPhoneError(validation.error);
+  };
+
   // Função para buscar nome do cliente pelo telefone
   const handlePhoneLookup = async (phone: string) => {
-    const normalizedPhone = phone.replace(/\D/g, '');
+    const normalizedPhone = phone.replace(/\D/g, "");
 
-    // Valida se tem pelo menos 11 dígitos
-    if (normalizedPhone.length < 11) {
+    // Validar se o telefone é válido antes de buscar
+    const validation = validateBrazilianPhone(phone);
+    if (!validation.isValid) {
       return;
     }
 
@@ -117,11 +178,11 @@ export function BookingItem({
 
       if (result.success && result.name) {
         setCustomerName(result.name);
-        const firstName = result.name.split(' ')[0];
+        const firstName = result.name.split(" ")[0];
         toast.success(`Bem-vindo de volta, ${firstName}!`);
       }
     } catch (error) {
-      console.error('[PHONE_LOOKUP_ERROR]', error);
+      console.error("[PHONE_LOOKUP_ERROR]", error);
     } finally {
       setIsLoadingName(false);
     }
@@ -153,16 +214,16 @@ export function BookingItem({
         if (result.success && result.times) {
           setAvailableTimes(result.times);
           if (result.times.length === 0) {
-            setErrorMessage('Não há horários disponíveis para esta data');
+            setErrorMessage("Não há horários disponíveis para esta data");
           }
         } else {
-          setErrorMessage(result.error || 'Erro ao buscar horários');
+          setErrorMessage(result.error || "Erro ao buscar horários");
           setAvailableTimes([]);
         }
       } catch (error) {
         if (cancelled) return;
-        console.error('Erro ao buscar horários:', error);
-        setErrorMessage('Erro ao buscar horários disponíveis');
+        console.error("Erro ao buscar horários:", error);
+        setErrorMessage("Erro ao buscar horários disponíveis");
         setAvailableTimes([]);
       } finally {
         if (!cancelled) {
@@ -180,7 +241,7 @@ export function BookingItem({
 
   // Auto-lookup quando telefone atingir 11 dígitos
   useEffect(() => {
-    const normalizedPhone = customerPhone.replace(/\D/g, '');
+    const normalizedPhone = customerPhone.replace(/\D/g, "");
 
     if (normalizedPhone.length === 11) {
       const timeoutId = setTimeout(() => {
@@ -196,8 +257,8 @@ export function BookingItem({
     if (selectedBarber && dateStepRef.current) {
       const timeoutId = setTimeout(() => {
         dateStepRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
+          behavior: "smooth",
+          block: "center",
         });
       }, 100);
 
@@ -210,8 +271,8 @@ export function BookingItem({
     if (selectedDate && timeStepRef.current) {
       const timeoutId = setTimeout(() => {
         timeStepRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
+          behavior: "smooth",
+          block: "center",
         });
       }, 100);
 
@@ -224,8 +285,8 @@ export function BookingItem({
     if (selectedTime && formStepRef.current) {
       const timeoutId = setTimeout(() => {
         formStepRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
+          behavior: "smooth",
+          block: "center",
         });
       }, 100);
 
@@ -251,24 +312,24 @@ export function BookingItem({
   const handleConfirmBooking = () => {
     // Validações
     if (!selectedBarber) {
-      setErrorMessage('Por favor, selecione um profissional');
+      setErrorMessage("Por favor, selecione um profissional");
       return;
     }
 
     if (!selectedDate || !selectedTime) {
-      setErrorMessage('Por favor, selecione uma data e horário');
+      setErrorMessage("Por favor, selecione uma data e horário");
       return;
     }
 
     if (!customerName.trim() || !customerPhone.trim()) {
-      setErrorMessage('Por favor, preencha seu nome e telefone');
+      setErrorMessage("Por favor, preencha seu nome e telefone");
       return;
     }
 
     setErrorMessage(null);
 
     // Combina data e hora
-    const [hours, minutes] = selectedTime.split(':').map(Number);
+    const [hours, minutes] = selectedTime.split(":").map(Number);
     const bookingDate = new Date(selectedDate);
     bookingDate.setHours(hours, minutes, 0, 0);
 
@@ -350,7 +411,6 @@ export function BookingItem({
            overflow-y-auto: Só essa parte faz scroll.
         */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-
           {/* PASSO 1: Selecionar Profissional */}
           <div>
             <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
@@ -363,18 +423,22 @@ export function BookingItem({
                   key={barber.id}
                   onClick={() => handleBarberChange(barber.id)}
                   type="button"
-                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50 ${selectedBarber === barber.id
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border'
-                    }`}
+                  className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:border-primary/50 ${
+                    selectedBarber === barber.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border"
+                  }`}
                 >
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={barber.avatarUrl || undefined} alt={barber.name} />
+                    <AvatarImage
+                      src={barber.avatarUrl || undefined}
+                      alt={barber.name}
+                    />
                     <AvatarFallback>
                       {barber.name
-                        .split(' ')
+                        .split(" ")
                         .map((n) => n[0])
-                        .join('')
+                        .join("")
                         .toUpperCase()
                         .slice(0, 2)}
                     </AvatarFallback>
@@ -413,7 +477,7 @@ export function BookingItem({
                   locale={ptBR}
                   disabled={(date) => date < new Date()}
                   className="rounded-md"
-                // Removemos w-full aqui para o calendário não tentar esticar demais
+                  // Removemos w-full aqui para o calendário não tentar esticar demais
                 />
               </div>
             </div>
@@ -446,7 +510,7 @@ export function BookingItem({
                   {availableTimes.map((time) => (
                     <Button
                       key={time}
-                      variant={selectedTime === time ? 'default' : 'outline'}
+                      variant={selectedTime === time ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedTime(time)}
                       className="text-xs px-2"
@@ -483,18 +547,27 @@ export function BookingItem({
                       type="tel"
                       placeholder="(99) 99999-9999"
                       value={customerPhone}
-                      onChange={(e) => setCustomerPhone(formatPhoneNumber(e.target.value))}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
                       onBlur={(e) => handlePhoneLookup(e.target.value)}
                       disabled={isPending}
                       autoComplete="tel"
+                      className={
+                        phoneError
+                          ? "border-destructive focus-visible:ring-destructive"
+                          : ""
+                      }
                     />
                     {isLoadingName && (
                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Usaremos para enviar a confirmação do agendamento.
-                  </p>
+                  {phoneError ? (
+                    <p className="text-xs text-destructive">{phoneError}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Usaremos para enviar a confirmação do agendamento.
+                    </p>
+                  )}
                 </div>
                 {/* Nome depois */}
                 <div className="space-y-2">
@@ -529,7 +602,9 @@ export function BookingItem({
           {selectedBarber && selectedDate && selectedTime && service && (
             <div className="mb-4 flex justify-between text-sm text-muted-foreground">
               <span>{service.name}</span>
-              <span className="font-bold text-foreground">{formatPrice(service.price.toString())}</span>
+              <span className="font-bold text-foreground">
+                {formatPrice(service.price.toString())}
+              </span>
             </div>
           )}
 
@@ -543,6 +618,7 @@ export function BookingItem({
               !selectedTime ||
               !customerName.trim() ||
               !customerPhone.trim() ||
+              !isPhoneValid ||
               isPending
             }
           >
@@ -552,7 +628,7 @@ export function BookingItem({
                 Processando...
               </>
             ) : (
-              'Confirmar Agendamento'
+              "Confirmar Agendamento"
             )}
           </Button>
         </div>
