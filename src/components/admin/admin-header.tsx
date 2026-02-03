@@ -1,12 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Calendar, Menu, Settings, TrendingUp, UserCircle } from "lucide-react";
+import {
+  Calendar,
+  Cog,
+  Menu,
+  Scissors,
+  Settings,
+  TrendingUp,
+  UserCircle,
+  Users,
+} from "lucide-react";
 
 import { Logo } from "@/assets/logo-without-background";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -16,6 +35,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { UserNav } from "@/components/admin/user-nav";
+import { cn } from "@/lib/utils";
 
 interface AdminHeaderProps {
   /**
@@ -80,6 +100,14 @@ export function AdminHeader({
   user,
 }: AdminHeaderProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Verifica se alguma rota do submenu "Gerenciar" está ativa
+  const isManageActive = [
+    "/admin/services",
+    "/admin/barbers",
+    "/admin/settings",
+  ].includes(pathname);
 
   const navigationLinks: NavigationLink[] = [
     {
@@ -104,6 +132,12 @@ export function AdminHeader({
       href: "/admin/bookings",
       label: "Agendamentos",
       icon: Calendar,
+      show: true,
+    },
+    {
+      href: "/admin/customers",
+      label: "Clientes",
+      icon: Users,
       show: true,
     },
   ];
@@ -202,29 +236,127 @@ export function AdminHeader({
         </div>
 
         {/* Right Side: Navegação Desktop + Ações + UserNav */}
-        <div className="flex items-center gap-2 md:gap-4">
-          {/* Botões de Navegação (Desktop - somente no dashboard) */}
+        <div className="flex items-center gap-2 md:gap-7">
+          {/* NavigationMenu (Desktop - somente no dashboard) */}
           {showNavigation && barbershop && (
-            <div className="hidden items-center gap-2 md:flex">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/bookings">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Agendamentos
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/services">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Gerir Serviços
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/barbers">
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  Minha Equipe
-                </Link>
-              </Button>
-            </div>
+            <NavigationMenu className="hidden md:flex">
+              <NavigationMenuList className="space-x-2">
+                {/* Item Individual: Agendamentos */}
+                <NavigationMenuItem>
+                  <Link href="/admin/bookings" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        pathname === "/admin/bookings" &&
+                          "bg-accent text-accent-foreground font-semibold border border-primary",
+                      )}
+                    >
+                      {/* <Calendar className="mr-2 h-4 w-4" /> */}
+                      Agendamentos
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+
+                {/* Item Individual: Clientes */}
+                <NavigationMenuItem>
+                  <Link href="/admin/customers" legacyBehavior passHref>
+                    <NavigationMenuLink
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        pathname === "/admin/customers" &&
+                          "bg-accent text-accent-foreground font-semibold border border-primary",
+                      )}
+                    >
+                      {/* <Users className="mr-2 h-4 w-4" /> */}
+                      Clientes
+                    </NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+
+                {/* Submenu: Gerenciar */}
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger
+                    className={cn(
+                      isManageActive &&
+                        "bg-accent text-accent-foreground font-semibold border border-primary",
+                    )}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Gerenciar
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-[320px] gap-3 p-4">
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/admin/services"
+                            className={cn(
+                              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                              pathname === "/admin/services" &&
+                                "bg-accent text-accent-foreground font-semibold",
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Scissors className="h-4 w-4" />
+                              <div className="text-sm font-medium leading-none">
+                                Gerir Serviços
+                              </div>
+                            </div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Configure serviços e preços oferecidos
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/admin/barbers"
+                            className={cn(
+                              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                              pathname === "/admin/barbers" &&
+                                "bg-accent text-accent-foreground font-semibold",
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <UserCircle className="h-4 w-4" />
+                              <div className="text-sm font-medium leading-none">
+                                Minha Equipe
+                              </div>
+                            </div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Gerir barbeiros e seus horários
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                      <li>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href="/admin/settings"
+                            className={cn(
+                              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                              pathname === "/admin/settings" &&
+                                "bg-accent text-accent-foreground font-semibold",
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Cog className="h-4 w-4" />
+                              <div className="text-sm font-medium leading-none">
+                                Definições
+                              </div>
+                            </div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              Configurações da barbearia
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           )}
 
           {/* Ações Customizadas (ex: CreateBookingDialog) */}
