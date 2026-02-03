@@ -1,15 +1,21 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useState } from 'react';
-import { Calendar, Menu, Settings, TrendingUp, UserCircle } from 'lucide-react';
+import Link from "next/link";
+import { useState } from "react";
+import { Calendar, Menu, Settings, TrendingUp, UserCircle } from "lucide-react";
 
-import { Logo } from '@/assets/logo';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { UserNav } from '@/components/admin/user-nav';
+import { Logo } from "@/assets/logo-without-background";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { UserNav } from "@/components/admin/user-nav";
 
 interface AdminHeaderProps {
   /**
@@ -77,26 +83,26 @@ export function AdminHeader({
 
   const navigationLinks: NavigationLink[] = [
     {
-      href: '/admin',
-      label: 'Dashboard',
+      href: "/admin",
+      label: "Dashboard",
       icon: TrendingUp,
       show: true,
     },
     {
-      href: '/admin/services',
-      label: 'Gerir Serviços',
+      href: "/admin/services",
+      label: "Gerir Serviços",
       icon: Settings,
       show: true,
     },
     {
-      href: '/admin/barbers',
-      label: 'Minha Equipe',
+      href: "/admin/barbers",
+      label: "Minha Equipe",
       icon: UserCircle,
       show: true,
     },
     {
-      href: '/admin/bookings',
-      label: 'Agendamentos',
+      href: "/admin/bookings",
+      label: "Agendamentos",
       icon: Calendar,
       show: true,
     },
@@ -151,14 +157,21 @@ export function AdminHeader({
                 <div className="rounded-lg bg-muted p-3 mx-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={barbershop.logoUrl || undefined} alt={barbershop.name} />
+                      <AvatarImage
+                        src={barbershop.logoUrl || undefined}
+                        alt={barbershop.name}
+                      />
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {barbershop.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">Barbearia Ativa</p>
-                      <p className="mt-0.5 text-sm font-semibold truncate">{barbershop.name}</p>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Barbearia Ativa
+                      </p>
+                      <p className="mt-0.5 text-sm font-semibold truncate">
+                        {barbershop.name}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -169,16 +182,20 @@ export function AdminHeader({
           {/* Logo (Desktop - somente no dashboard) */}
           {showLogo && (
             <Link href="/admin" className="">
-              <Logo width={55} height={55} color="#ffffff" lineColor="#000000" />
+              <Logo width={55} height={55} />
             </Link>
           )}
 
           {/* Título (páginas internas) */}
           {title && !showLogo && (
             <div>
-              <h1 className="text-xl font-bold tracking-tight md:text-2xl">{title}</h1>
+              <h1 className="text-xl font-bold tracking-tight md:text-2xl">
+                {title}
+              </h1>
               {subtitle && (
-                <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">{subtitle}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">
+                  {subtitle}
+                </p>
               )}
             </div>
           )}
@@ -189,6 +206,12 @@ export function AdminHeader({
           {/* Botões de Navegação (Desktop - somente no dashboard) */}
           {showNavigation && barbershop && (
             <div className="hidden items-center gap-2 md:flex">
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/admin/bookings">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Agendamentos
+                </Link>
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/admin/services">
                   <Settings className="mr-2 h-4 w-4" />

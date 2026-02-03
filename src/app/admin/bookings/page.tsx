@@ -1,23 +1,23 @@
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { format, parse, startOfDay, endOfDay } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format, parse, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { prisma } from '@/lib/prisma';
-import { AdminHeader } from '@/components/admin/admin-header';
-import { BookingAdminItem } from '@/app/admin/bookings/_components/booking-admin-item';
-import { DateFilter } from '@/app/admin/bookings/_components/date-filter';
-import { CreateBookingDialog } from '@/app/admin/bookings/_components/create-booking-dialog';
-import { BarberFilter } from '@/app/admin/bookings/_components/barber-filter';
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { prisma } from "@/lib/prisma";
+import { AdminHeader } from "@/components/admin/admin-header";
+import { BookingAdminItem } from "@/app/admin/bookings/_components/booking-admin-item";
+import { DateFilter } from "@/app/admin/bookings/_components/date-filter";
+import { CreateBookingDialog } from "@/app/admin/bookings/_components/create-booking-dialog";
+import { BarberFilter } from "@/app/admin/bookings/_components/barber-filter";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 
 interface AdminBookingsPageProps {
   searchParams: Promise<{
@@ -33,7 +33,7 @@ export default async function AdminBookingsPage({
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
-    redirect('/api/auth/signin');
+    redirect("/api/auth/signin");
   }
 
   // 2. Buscar barbearia do usuário
@@ -44,7 +44,7 @@ export default async function AdminBookingsPage({
   });
 
   if (!barbershop) {
-    redirect('/admin');
+    redirect("/admin");
   }
 
   // 3. Obter data do filtro (ou usar hoje como padrão)
@@ -52,7 +52,7 @@ export default async function AdminBookingsPage({
   const dateParam = params.date;
   const barberId = params.barberId;
   const selectedDate = dateParam
-    ? parse(dateParam, 'yyyy-MM-dd', new Date())
+    ? parse(dateParam, "yyyy-MM-dd", new Date())
     : new Date();
 
   // 4. Calcular início e fim do dia
@@ -75,7 +75,7 @@ export default async function AdminBookingsPage({
       barber: true,
     },
     orderBy: {
-      date: 'asc',
+      date: "asc",
     },
   });
 
@@ -84,17 +84,17 @@ export default async function AdminBookingsPage({
     prisma.customer.findMany({
       where: { barbershopId: barbershop.id },
       select: { id: true, name: true, phone: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     }),
     prisma.service.findMany({
       where: { barbershopId: barbershop.id },
       select: { id: true, name: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     }),
     prisma.barber.findMany({
       where: { barbershopId: barbershop.id },
       select: { id: true, name: true, avatarUrl: true },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     }),
   ]);
 
@@ -104,6 +104,8 @@ export default async function AdminBookingsPage({
       <AdminHeader
         barbershop={barbershop}
         user={session.user}
+        showLogo
+        showNavigation
       />
 
       <div className="container mx-auto space-y-6 p-4 md:p-8">
@@ -137,7 +139,7 @@ export default async function AdminBookingsPage({
                 Agenda Livre
               </CardTitle>
               <CardDescription>
-                Não há agendamentos para{' '}
+                Não há agendamentos para{" "}
                 {format(selectedDate, "dd 'de' MMMM 'de' yyyy", {
                   locale: ptBR,
                 })}
@@ -152,7 +154,8 @@ export default async function AdminBookingsPage({
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {bookings.length} {bookings.length === 1 ? 'agendamento' : 'agendamentos'} para{' '}
+              {bookings.length}{" "}
+              {bookings.length === 1 ? "agendamento" : "agendamentos"} para{" "}
               {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
             </p>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
